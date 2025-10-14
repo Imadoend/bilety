@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Практики 1–40</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .buttons {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #content {
+      max-width: 800px;
+      margin: 0 auto;
+      white-space: pre-wrap;
+      background: white;
+      padding: 20px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      min-height: 200px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="buttons">
+    <!-- 40 кнопок -->
+    <script>
+      for (let i = 1; i <= 40; i++) {
+        document.write(`<button onclick="show(${i})">${i}</button>`);
+      }
+    </script>
+  </div>
+
+  <pre id="content">Нажми на номер практики</pre>
+
+  <script>
+    // Пример: только практика 29 с твоим PHP-кодом
+    const practices = {
+      1:`# Установка Django (если ещё не установлен)
+pip install django
+
+# Создаём проект
+django-admin startproject myproject
+cd myproject
+
+# Создаём приложение
+python manage.py startapp myapp
+
+Открой myproject/settings.py, найди INSTALLED_APPS, добавь:
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'myapp',  # <—— это важно
+]
+
+Файл: myapp/models.py (модель создаем)
+from django.db import models
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.CharField(max_length=100)
+    published_year = models.IntegerField()
+
+    def __str__(self):
+        return self.title
+
+Зарегистрировать модель в админке Файл: myapp/admin.py
+from django.contrib import admin
+from .models import Book
+
+admin.site.register(Book)
+
+Применить миграции + суперпользователь в терминале
+# Создать миграции для модели
+python manage.py makemigrations
+
+# Применить к базе (SQLite по умолчанию)
+python manage.py migrate
+
+# Создать админа (логин/пароль придумаешь)
+python manage.py createsuperuser
+
+
+Запустить сервер в терминале
+python manage.py runserver
+
+Открыть в браузере
+http://127.0.0.1:8000/admin
+`,
+      29: `инструкция!!!
+      Установите php на комп архив
+      Там будет php.exe
+      Распакуйте архив в C: и назовите php
+      Создайте файл task_manager.php в папке C:\\exam\\
+      Туда пишите КОД, внизу будет
+      Из папки exam откройте командную строку и запустите код в кавычках "C:\\php\\php.exe -S localhost:8000"
+      Если php.exe в другой папке, то определите путь к нему и впишите вместо C:\\php\\php.exe
+      
+      В браузере откройте http://localhost:8000/task_manager.php
+      
+      ВОТ КОД
+      <?php
+session_start();
+
+// Инициализация списка задач в сессии
+if (!isset($_SESSION['tasks'])) {
+    $_SESSION['tasks'] = [];
+}
+
+$message = '';
+
+// === ДОБАВЛЕНИЕ ЗАДАЧИ ===
+
+if ($_POST['action'] ?? '' == 'add') {
+    $title = trim($_POST['title'] ?? '');
+    if ($title !== '') {
+        $_SESSION['tasks'][] = [
+            'id' => time(),
+            'title' => htmlspecialchars($title)
+        ];
+        $message = "Задача добавлена!";
+    } else {
+        $message = "Ошибка: заголовок не может быть пустым.";
+    }
+}
+
+// === УДАЛЕНИЕ ЗАДАЧИ ===
+if ($_GET['action'] ?? '' == 'delete') {
+    $id = (int)$_GET['id'];
+    foreach ($_SESSION['tasks'] as $key => $task) {
+        if ($task['id'] == $id) {
+            unset($_SESSION['tasks'][$key]); 
+            $_SESSION['tasks'] = array_values($_SESSION['tasks']);
+            $message = "Задача удалена.";
+            break;
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Task Manager</title>
+</head>
+<body>
+
+<h1>Менеджер задач</h1>
+
+<!-- Сообщение после действия -->
+<?php if ($message): ?>
+    <p><strong><?= $message ?></strong></p>
+<?php endif; ?>
+
+<!-- Форма добавления задачи -->
+<form method="POST">
+    <input type="hidden" name="action" value="add">
+    <label>Новая задача: <input type="text" name="title"></label>
+    <button type="submit">Добавить</button>
+</form>
+
+<hr>
+
+<!-- Список задач -->
+<h2>Список задач:</h2>
+<?php if (empty($_SESSION['tasks'])): ?>
+    <p>Пока нет задач.</p>
+<?php else: ?>
+    <ul>
+        <?php foreach ($_SESSION['tasks'] as $task): ?>
+            <li>
+                <?= $task['title'] ?>
+                <a href="?action=delete&id=<?= $task['id'] ?>">[Удалить]</a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+<?php endif; ?>
+
+</body>
+</html>`,
+32:`import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from "react";
+import { Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+const STORAGE_KEY = '@todoes'
+
+
+export default function App (){
+  const [text, setText] = useState('');
+  const [todoes, setTodoes] = useState([]);
+
+   
+  useEffect(()=>{loadTodoes();},[]);
+
+  const loadTodoes = async () =>{
+      try {
+        const saved = await AsyncStorage.getItem(STORAGE_KEY);
+      if (saved !== null){
+        setTodoes(JSON.parse(saved))
+      } 
+      } catch (error) {
+        console.log('loadTodoes',error);
+      }
+  }
+
+  const saveTodoes = async (newTodoes) =>{
+    try {
+      if (newTodoes==null) {console.log(newTodoes)}
+      else await AsyncStorage.setItem(STORAGE_KEY,JSON.stringify(newTodoes));
+    } catch (error) {
+      console.log('saveTodoes',newTodoes,error)
+    }
+  }
+
+  const addTodo =()=>{
+    if (text == '') return  console.log('Текста нет лол') 
+    const newTodo={
+      id:Date.now().toString(),
+      text: text,
+    }
+
+    const updatedTodoes = [...todoes, newTodo]
+    setTodoes(updatedTodoes);
+    setText(''); 
+    saveTodoes(updatedTodoes);
+  }
+
+  const deleteTodoes = async(id)=>{
+    const updatedTodo = todoes.filter((todo)=> todo.id !== id);
+    setTodoes(updatedTodo);
+    saveTodoes(updatedTodo);
+  }
+
+  return(
+    <View>
+       <TextInput placeholder="Пишите ченить" value={text} onChangeText={setText}/>
+      <Button title="добавит" onPress={addTodo}/>
+      <FlatList 
+      data = {todoes}
+      keyExtractor = {(item)=> item.id}
+      renderItem = {({item})=>
+      <View style={styles.task}>
+          <Text>{item.text}</Text>
+          
+          <Button title="удалит" onPress={()=>deleteTodoes(item.id)}/>
+        </View>
+      }
+      
+      ></FlatList>
+    </View>
+  )
+ }
+
+ const styles = StyleSheet.create({
+  task:{
+    flexDirection: 'row'
+  }
+ })`,
+ 33:`В СЛЕДУЩЕМ КОДЕ ОБЕРНИТЕ /details/{item.id} В КОВЫЧКИ ПОД НАКЛОНОМ И ПОСТАВЬТЕ ДОЛЛАР ПЕРЕД {item.id} В ЭТОЙ ЖЕ СТРОКЕ
+В консоли:
+npx create-react-app ./
+npm i react-router-dom
+
+App.js:
+import logo from './logo.svg';
+import './App.css'; 
+import { useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Link, Routes } from 'react-router-dom';
+
+const moments = [
+  {id:1, name:"moment1",description:'description1'},
+  {id:2, name:"moment2",description:'description2'},
+  {id:3, name:"moment3",description:'description3'},
+  {id:4, name:"moment4",description:'description4'}
+]
+
+function Home (){
+  return( 
+  <div>
+    {moments.map(item=>(
+      <ul key={item.id}>
+        <Link to={'/details/{item.id}'}>{item.name}</Link>
+      </ul>
+    ))}
+  </div>)
+}
+
+function Details ({ item }){
+  return( 
+  <div>
+    <div>{item.name}</div>
+    <div>{item.description}</div>
+    <Link to="/">На главную</Link>
+    {console.log(item)}
+  </div>)
+}
+
+function App() {
+  return (
+    <Router> 
+    <div className="App">
+       <Routes>
+        <Route path="/" element={<Home />}></Route>
+        <Route path="/details/:id"  element={<DetailsWrapper />}></Route>
+       </Routes>
+    </div>
+    </Router>
+  );
+}
+
+function DetailsWrapper (){
+    const {id}=useParams();
+    const itemId=parseInt(id);
+    const item = moments.find(i => (i.id == itemId)); 
+return <Details item={item} />
+}
+
+export default App;
+`
+    };
+
+    // Остальные практики — пока пусто
+    for (let i = 1; i <= 40; i++) {
+      if (!practices[i]) {
+        practices[i] = `Код для практики ${i} ещё не добавлен.`;
+      }
+    }
+
+    function show(n) {
+      document.getElementById('content').textContent = practices[n];
+    }
+  </script>
+
+</body>
+</html>
