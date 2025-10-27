@@ -854,6 +854,220 @@ body {
   50% { transform: scale(1.5); }
   100% { transform: scale(1); }
 }`,
+      15:`В КОНСОЛИ pip install flask requests
+      СОЗДАЙТЕ app.js:
+      from flask import Flask, session, redirect, url_for, render_template, request
+import requests
+import json
+app = Flask(__name__)
+app.secret_key = 'super-secret-key'  
+
+GOOGLE_CLIENT_ID = '75555377697-pjhutp9ud2vmmieqsg8tspusib7jgm71.apps.googleusercontent.com'
+GOOGLE_CLIENT_SECRET = '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'
+GOOGLE_REDIRECT_URI = 'http://localhost:5000/callback_google'
+GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+GOOGLE_USERINFO_URL = 'https://www.googleapis.com/userinfo/v2/me'
+ 
+@app.route('/')
+def index():
+    user_name = session.get('user_name')
+    if user_name:
+        return redirect(url_for('map'))
+    return '''
+        <h1>Добро пожаловать!</h1>
+        <a href="/login_google">
+            <button style="padding: 10px 20px; font-size: 16px;">Войти через Google</button>
+        </a>
+    ''' 
+@app.route('/login_google')
+def login_google():
+    url = (
+        f"{GOOGLE_AUTH_URL}?"
+        f"client_id={GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={GOOGLE_REDIRECT_URI}"
+        f"&response_type=code"
+        f"&scope=email+profile"
+        f"&access_type=offline"
+    )
+    return redirect(url)
+ 
+@app.route('/callback_google')
+def callback_google():
+    code = request.args.get('code')
+    if not code:
+        return "Ошибка: код не получен", 400
+ 
+    data = {
+        'code': code,
+        'client_id': GOOGLE_CLIENT_ID,
+        'client_secret': GOOGLE_CLIENT_SECRET,
+        'redirect_uri': GOOGLE_REDIRECT_URI,
+        'grant_type': 'authorization_code'
+    }
+    response = requests.post(GOOGLE_TOKEN_URL, data=data)
+    token_json = response.json()
+    access_token = token_json.get('access_token')
+
+    if not access_token:
+        return "Не удалось получить токен", 400
+ 
+    headers = {'Authorization': f'Bearer {access_token}'}
+    user_response = requests.get(GOOGLE_USERINFO_URL, headers=headers)
+    user_data = user_response.json()
+
+    session['user_name'] = user_data.get('given_name') or user_data.get('name', 'Пользователь')
+    return redirect(url_for('map'))
+
+@app.route('/map')
+def map():
+    user_name = session.get('user_name')
+    if not user_name:
+        return redirect('/')
+    return render_template('map.html', name=user_name)
+ 
+@app.route('/logout')
+def logout():
+    session.pop('user_name', None)
+    return redirect('/')
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+
+
+    СОЗДАЙТЕ templates/map.html: ЗАМЕНИТЕ ! перед script на <
+    А ТЕКЖЕ ОБЕРНИТЕ В КОВЫЧИКЕ ПОД НАКЛОНОМ СТРОКУ: yandex#{item.key} И ПОСТАВЬТЕ ДОЛЛАР МЕЖДУ yandex# И {item.key}
+    <!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Карта</title>
+    !script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=97755205-3d62-402d-9df8-c3c60a4181d4">!/script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        } 
+        #logout-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: white;
+            background-color: #000000; 
+        }
+        #logout-btn:hover {
+            background-color: #5a6268;
+        }
+
+        #map {
+            width: 100%;
+            height: 70vh;
+            max-height: 800px;
+            margin-top: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Стиль для кастомного контрола на карте */
+        .ymap-controls {
+            display: flex;
+            gap: 4px;
+            margin: 0;
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+        }
+        .map-button {
+            padding: 6px 10px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .map-button:hover {
+            background: #f5f5f5;
+        }
+        .map-button.active {
+            background: #e6f2ff;
+            border-color: #9ecbff;
+            font-weight: 500;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>привет, {{ name }}!!!!</h1>
+    <p>вот карта от яндекса тебе</p>
+    <a href="/logout" id="logout-btn">Выйти</a>
+
+    <div id="map"></div>
+
+    !script>
+        let map;
+
+        ymaps.ready(function () {
+            // Инициализация карты
+            map = new ymaps.Map('map', {
+                center: [55.75, 37.62],
+                zoom: 10,
+                controls: ['zoomControl']
+            });
+
+            // Создаём контейнер для кнопок переключения слоя
+            const controlElement = document.createElement('div');
+            controlElement.className = 'ymap-controls';
+
+            // Типы карт
+            const types = [
+                { key: 'map', label: 'Карта' },
+                { key: 'satellite', label: 'Спутник' },
+                { key: 'hybrid', label: 'Гибрид' }
+            ];
+
+            // Создаём кнопки
+            const buttons = {};
+            types.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'map-button';
+                btn.textContent = item.label;
+                btn.dataset.type = item.key;
+
+                btn.onclick = () => {
+                    // Убираем активный класс со всех
+                    Object.values(buttons).forEach(b => b.classList.remove('active'));
+                    // Делаем текущую активной
+                    btn.classList.add('active');
+                    // Меняем тип карты
+                    map.setType(yandex#{item.key});
+                };
+
+                controlElement.appendChild(btn);
+                buttons[item.key] = btn;
+            });
+
+            // По умолчанию активна "Карта"
+            buttons['map'].classList.add('active');
+
+            // Добавляем элемент управления на карту
+            map.controls.add(controlElement, {
+                position: { top: '10px', left: '10px' }
+            });
+        });
+    !/script>
+
+</body>
+</html>
+      `,
+      
       29: `инструкция!!!
       Установите php на комп архив
       Там будет php.exe
