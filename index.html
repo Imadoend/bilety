@@ -102,7 +102,7 @@ python manage.py runserver
 Открыть в браузере
 http://127.0.0.1:8000/admin
 `,
-2:`
+3:`
 pip install django django-allauth
 django-admin startproject myproject .
 
@@ -301,7 +301,8 @@ Email: admin@example.com
 ПЕРЕХОДИМ https://console.cloud.google.com/apis/credentials и регаемся. Create credentials. OAuth client ID
 ДАлее в форме: Application type: Web application
 Name: ЛЮБОЕ
-Везде где можно добавить ссылки, добавляем http://127.0.0.1:8000
+Authorized JavaScript origins: http://127.0.0.1:8000
+Authorized redirect URIs: http://127.0.0.1:8000/accounts/google/login/callback/
 НУЖНЫ ДВА ЗНАЧ Client ID и Client secret, сохраните json на всякий
 
 
@@ -327,6 +328,299 @@ Authorization callback URL: http://127.0.0.1:8000/accounts/github/login/callback
 Переходим на http://127.0.0.1:8000, далее интуитивно понятно все работает и круто 
 
 `,
+      4:`УСТАНОВИТЬ фласк в консоли:
+      pip install flask
+      
+      СОЗДАТЬ app.py с кодом:
+ 
+from flask import Flask, render_template, request, redirect, url_for
+import sqlite3
+
+app = Flask(__name__)
+
+ 
+def init_db():
+    with sqlite3.connect('database.db') as conn:
+        conn.execute('CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)')
+        if conn.execute('SELECT COUNT(*) FROM items').fetchone()[0] == 0:
+            conn.execute("INSERT INTO items (name) VALUES (?)", ('Первый элемент',))
+            conn.execute("INSERT INTO items (name) VALUES (?)", ('Второй элемент',))
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        name = request.form['name']
+        if name:
+            with sqlite3.connect('database.db') as conn:
+                conn.execute('INSERT INTO items (name) VALUES (?)', (name,))
+        return redirect(url_for('index'))
+
+    # Получаем все элементы из БД
+    with sqlite3.connect('database.db') as conn:
+        cursor = conn.execute('SELECT id, name FROM items')
+        items = cursor.fetchall()
+
+    return render_template('index.html', items=items)
+
+if __name__ == '__main__':
+    init_db()
+    app.run(debug=True)
+
+
+    СОЗДАТЬ templates/index.html:
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список элементов</title>
+ 
+</head>
+<body>
+    <h1>Список элементов</h1>
+    <ul>
+        {% for item in items %}
+            <li>{{ item[1] }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Добавить элемент</h2>
+    <form method="post">
+        <input type="text" name="name" placeholder="Название" required>
+        <button type="submit">Добавить</button>
+    </form>
+</body>
+</html>
+
+
+ЗАПУСТИТЬ приложение python app.py
+
+ОТКРЫТЬ В БРАУЗЕРЕ: http://127.0.0.1:5000
+      `,
+      8:`СОЗДАЙТЕ index.html (ПРИМЕЧАНИЕ, ПОИСК РАБОТАЕТ ТОЛЬКО ПО ГОРОДАМ И ВОДОЕМАМ)
+      ЗАМЕНИТЕ ! ПЕРЕД script на стрелочка вправо
+      ВСТАВЬТЕ АПИ КЛЮЧ 97755205-3d62-402d-9df8-c3c60a4181d4 ВМЕСТО ВАШ_КЛЮЧ. НЕ СРАБОТАЕТ, САМИ БЕСПЛАТНО СГЕНЕРЬТЕ ЯНДЕКС АПИ КЛЮЧ, ТИП JavaScript API и HTTP Геокодер
+      <!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>типо карта</title>
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { width: 100%; height: 100vh; } 
+  </style> 
+  !script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU">!/script>
+</head>
+<body> 
+  <div id="map"></div> 
+ 
+  !script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=ВАШ_КЛЮЧ">!/script>
+  !script>
+    let map; 
+    ymaps.ready(() => {
+      map = new ymaps.Map('map', {
+        center: [55.7558, 37.6173],  
+        zoom: 10
+      }); 
+      map.controls.add('trafficControl');  
+      map.controls.add('zoomControl', {
+        position: { right: '10px', top: '70px' }
+      });
+    });
+  
+  !/script>
+</body>
+</html>`,
+
+
+      10:`В КОНСОЛИ: pip install flask flask-sqlalchemy flask-login
+      
+      СОЗДАТЬ app.py:
+      from flask import Flask, render_template, request, redirect, url_for, flash, session
+from models import db, User
+from forms import validate_register, validate_login
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secretkey123'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+ 
+db.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+ 
+with app.app_context():
+    db.create_all()
+
+@app.route('/')
+def home():
+    return render_template('base.html')
+ 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        is_valid, msg = validate_register({'username': username, 'password': password})
+        if not is_valid:
+            flash(msg)
+            return render_template('register.html')
+
+        if User.query.filter_by(username=username).first():
+            flash('Пользователь уже существует')
+            return render_template('register.html')
+
+        user = User(username=username)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        flash('Регистрация успешна')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        is_valid, msg = validate_login({'username': username, 'password': password})
+        if not is_valid:
+            flash(msg)
+            return render_template('login.html')
+
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Неверный логин или пароль')
+
+    return render_template('login.html')
+ 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return f'<h1>Даров, {current_user.username}!</h1><p><a href="/logout">выйте</a></p>'
+ 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+    
+
+
+    СОЗДАТЬ forms.py:
+    def validate_register(data):
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return False, 'Все поля обязательны'
+    if len(password) < 4:
+        return False, 'Пароль слишком короткий'
+    return True, ''
+
+def validate_login(data):
+    return validate_register(data)  
+
+
+
+    СОЗДАТЬ models.py:
+    from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+db = SQLAlchemy()
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+
+        СОЗДАТЬ templates/base.html
+        <!DOCTYPE html>
+<html>
+<head><title>Аутентификация</title></head>
+<body>
+    <h1>Добро пожаловать</h1>
+    {% if current_user.is_authenticated %}
+        <p><a href="{{ url_for('dashboard') }}">Личный кабинет</a></p>
+        <p><a href="{{ url_for('logout') }}">Выход</a></p>
+    {% else %}
+        <p><a href="{{ url_for('login') }}">Вход</a> | <a href="{{ url_for('register') }}">Регистрация</a></p>
+    {% endif %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <hr>
+    {% block content %}{% endblock %}
+</body>
+</html>
+
+
+СОЗДАТЬ templates/dashboard.html:
+{% extends "base.html" %}
+{% block content %}
+<h2>Личный кабинет</h2>
+<p>Добро пожаловать, {{ current_user.username }}!</p>
+<a href="{{ url_for('logout') }}">Выход</a>
+{% endblock %}
+
+
+СОЗДАТЬ templates/login.html:
+{% extends "base.html" %}
+{% block content %}
+<h2>Вход</h2>
+<form method="post">
+    <input type="text" name="username" placeholder="Логин" required><br><br>
+    <input type="password" name="password" placeholder="Пароль" required><br><br>
+    <button type="submit">Войти</button>
+</form>
+<a href="{{ url_for('register') }}">Нет аккаунта? Зарегистрируйтесь</a>
+{% endblock %}
+
+
+СОЗАТЬ templates/register.html:
+{% extends "base.html" %}
+{% block content %}
+<h2>Регистрация</h2>
+<form method="post">
+    <input type="text" name="username" placeholder="Логин" required><br><br>
+    <input type="password" name="password" placeholder="Пароль" required><br><br>
+    <button type="submit">Зарегистрироваться</button>
+</form>
+<a href="{{ url_for('login') }}">Уже есть аккаунт? Войти</a>
+{% endblock %}
+
+
+ЗАПУСТИТЬ python app.py
+    `,
       29: `инструкция!!!
       Установите php на комп архив
       Там будет php.exe
@@ -565,10 +859,17 @@ export default App;
         practices[i] = `Код для практики ${i} ещё не добавлен.`;
       }
     }
-
-    function show(n) {
-      document.getElementById('content').textContent = practices[n];
-    }
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML; // это безопасно конвертирует < > & " ' в < > &amp; &quot; &#x27;
+}
+function show(n) {
+  const contentElement = document.getElementById('content');
+  const text = practices[n];
+  // Используем функцию экранирования для преобразования < > & в < > &amp;
+  contentElement.innerHTML = escapeHtml(text);
+}
   </script>
 
 </body>
