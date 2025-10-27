@@ -621,6 +621,49 @@ class User(UserMixin, db.Model):
 
 ЗАПУСТИТЬ python app.py
     `,
+    11:`СОЗДАЙТЕ index.html (заранее накачайте там картиночек просто на комп чтобы можно было несколько сразу выделить и выбрать)
+    ЗАМЕНИТЕ ВСЕ ! ПЕРЕД script НА < 
+    <!DOCTYPE html>
+<html>
+<head>
+  <title>Загрузка изображений</title>
+  <style>
+    body { font-family: sans-serif; margin: 40px auto; max-width: 800px; text-align: center; }
+    .upload-area { border: 2px dashed #ccc; padding: 20px; cursor: pointer; }
+    .preview { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
+    .preview img { width: 150px; height: 150px; object-fit: cover; border: 1px solid #ddd; }
+    input { display: none; }
+  </style>
+</head>
+<body>
+
+  <h2>Загрузить изображения</h2>
+  <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+    Нажмите, чтобы выбрать файлы
+    <input type="file" id="fileInput" accept="image/*" multiple onchange="loadImages()" />
+  </div>
+  <div class="preview" id="preview"></div>
+
+  !script>
+    function loadImages() {
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+      const files = document.getElementById('fileInput').files;
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  !/script>
+
+</body>
+</html>
+    `,
       29: `инструкция!!!
       Установите php на комп архив
       Там будет php.exe
