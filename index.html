@@ -1068,6 +1068,35 @@ if __name__ == '__main__':
 </html>
       `,
       
+      17:`СОЗДАЙТЕ index.html, замените все ! перед script на <
+      И украсьте как нибудь чтобы хз тупо базовый минимум
+      <!DOCTYPE html>
+<html>
+<head>
+    <title>Регистрация</title>
+</head>
+<body>
+    <form id="registerForm">
+        <input type="text" id="name" placeholder="Имя" required><br><br>
+        <input type="email" id="email" placeholder="Email" required><br><br>
+        <input type="password" id="password" placeholder="Пароль" required><br><br>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+
+    !script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+            localStorage.setItem('user', JSON.stringify(user));
+            alert('Пользователь сохранён!');
+        });
+    !/script>
+</body>
+</html>`,
       29: `инструкция!!!
       Установите php на комп архив
       Там будет php.exe
