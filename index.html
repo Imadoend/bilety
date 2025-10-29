@@ -1097,6 +1097,94 @@ if __name__ == '__main__':
     !/script>
 </body>
 </html>`,
+
+    18:`В КОНСОЛИ django-admin startproject shop
+    cd shop
+    python manage.py startapp products
+    python manage.py startapp orders
+    
+    ВСТАВИТЬ КОД products/models.py:
+    from django.db import models
+
+class Product(models.Model):
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    stock = models.PositiveIntegerField()
+
+    def __str__(self):
+        return self.name
+        
+        
+    ВСТАВИТЬ КОД orders/models.py:
+    from django.contrib.auth.models import User
+from django.db import models
+from products.models import Product
+
+class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_paid = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Order {self.id} by {self.user.username}"
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name}"
+        
+        
+    В ФАЙЛЕ shop/settings.py НАЙТИ INSTALLED_APPS, В КОНЕЦ СПИСКА ВСТАВИТЬ:
+    'products',
+    'orders',
+    
+    
+    В КОНСОЛИ python manage.py makemigrations
+    python manage.py migrate
+    
+    
+    ДАЛЕЕ КОД orders/admin.py:
+    from django.contrib import admin
+from .models import Order, OrderItem
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 1
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'created_at', 'is_paid')
+    list_filter = ('is_paid', 'created_at')
+    search_fields = ('user__username',)
+    inlines = [OrderItemInline]
+
+@admin.register(OrderItem)
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ('order', 'product', 'quantity')
+    
+    
+    
+    ДАЛЕЕ КОД products/admin.py:
+    from django.contrib import admin
+from .models import Product
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'price', 'stock')
+    list_filter = ('price',)
+    search_fields = ('name',)
+    
+    
+    В КОНСОЛИ СОЗДАЕМ АДМИНА python manage.py createsuperuser
+    Пишем имя емейл пароль че хочец и запомнить их
+
+    В КОНСОЛИ ЗАПУСТИТЬ python manage.py runserver
+    В БРАУЗЕРЕ АДМИНКА НА http://127.0.0.1:8000/admin
+    Зайти и насоздавать юзеров товаров на всякий хз
+    `,
       29: `инструкция!!!
       Установите php на комп архив
       Там будет php.exe
