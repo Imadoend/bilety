@@ -1185,6 +1185,114 @@ class ProductAdmin(admin.ModelAdmin):
     В БРАУЗЕРЕ АДМИНКА НА http://127.0.0.1:8000/admin
     Зайти и насоздавать юзеров товаров на всякий хз
     `,
+    22:`В КОНСОЛИ: 
+    pip install django
+django-admin startproject school .
+python manage.py startapp students
+
+
+ ДОБАВИТЬ в school/settings.py в INSTALLED_APPS: 'students',
+
+
+ ЗАМЕНИТЬ students/models.py:
+ from django.db import models
+
+class Teacher(models.Model):
+    name = models.CharField(max_length=100)
+
+class Course(models.Model):
+    title = models.CharField(max_length=100)
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+
+class Student(models.Model):
+    name = models.CharField(max_length=100)
+    courses = models.ManyToManyField(Course)
+
+class Grade(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    score = models.CharField(max_length=2)
+    class Meta:
+        unique_together = ('student', 'course')
+
+
+СДЕЛАТЬ МИГРАЦИИ В КОНСОЛИ: 
+python manage.py makemigrations
+python manage.py migrate
+
+
+
+ЕСЛИ ХОТИТЕ ПРОДЕМОНСТРИРОВАТЬ МОДЕЛИ ЧЕРЕЗ АДМИНКУ ДЛЯ НАДЕЖНОСТИ:
+ИЗМЕНИТЕ students/admin.py:
+from django.contrib import admin
+from .models import Teacher, Course, Student, Grade
+
+admin.site.register(Teacher)
+admin.site.register(Course)
+admin.site.register(Student)
+admin.site.register(Grade)
+
+
+В КОНСОЛИ СОЗДАЙТЕ АДМИНА И ЗАДАЙТЕ ИМЯ И ПАРОЛЬ:
+python manage.py createsuperuser
+
+
+ЗАПУСТИТЬ python manage.py runserver
+ПЕРЕЙТИ http://127.0.0.1:8000/admin
+
+туда логин пароль админа и насоздавать всяких данных учителей и тп
+ `,
+ 23:`В КОНСОЛИ:
+ pip install django 
+ django-admin startproject ukit . 
+ python manage.py startapp hello 
+
+
+ В ukit/settings.py В INSTALLED_APS ДОБАВЬТЕ 'hello',
+
+
+СОЗДАЙТЕ ФАЙЛ hello/views.py:
+from django.http import HttpResponse
+from django.views import View
+
+class MainView(View):
+    def get(self, request):
+        text = request.session.get('text', 'Привет, УКИТ!')
+        return HttpResponse(text)
+
+    def post(self, request):
+        new_text = request.POST.get('text', '')
+        if new_text:
+            request.session['text'] = new_text
+        return self.get(request)
+
+
+СОЗДАЙТЕ hello/urls.py:
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.MainView.as_view(), name='home'),
+]
+
+
+
+ПЕРЕПИШИТЕ ukit/urls.py:
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('', include('hello.urls')),
+    path('admin/', admin.site.urls),
+]
+
+
+
+В КОНСОЛИ СДЕЛАЙТЕ МИГРАЦИИ И ЗАПУСТИТЕ
+python manage.py migrate
+python manage.py runserver
+   
+ `,
       29: `инструкция!!!
       Установите php на комп архив
       Там будет php.exe
