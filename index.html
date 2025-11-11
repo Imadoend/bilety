@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Практики 1–40</title>
+  <title>Пользовательский мануал по... </title>
   <style>
     body {
       font-family: monospace;
@@ -99,6 +99,75 @@ python manage.py runserver
 
 Открыть в браузере
 http://127.0.0.1:8000/admin
+`,
+2:`В КОНСОЛИ:
+npx create-expo-app ./
+npm install express multer
+npx expo install expo-image-picker
+
+В КОРНЕ ПРОЕКТА СОЗДАЙТЕ ПАПКУ uploads
+
+В КОРНЕ ПРОЕКТА СОЗДАЙТЕ server.js:
+const express = require('express');
+const multer = require('multer'); 
+const upload = multer({ dest: 'uploads/' }); 
+
+const app = express();
+app.use('/uploads', express.static('uploads'));
+
+app.post('/upload', upload.single('photo'), (req, res) => {
+  const ext = req.file.mimetype === 'image/jpeg' ? '.jpg' : '.png';
+  require('fs').renameSync(req.file.path, req.file.path + ext);
+  res.send('OK');
+});
+
+app.listen(3000);
+
+
+В ПАПКЕ app УДАЛИТЕ ВСЕ И СОЗДАЙТЕ index.tsx:
+import * as ImagePicker from 'expo-image-picker';
+import { useState } from 'react';
+import { Button, Image, View } from 'react-native';
+
+export default function Camera() {
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  const take = async () => {
+    await ImagePicker.requestCameraPermissionsAsync();
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setPhoto(uri);
+      fetch('http://192.168.1.12:3000/upload', {
+        method: 'POST',
+        body: (() => {
+          const fd = new FormData();
+          fd.append('photo', { uri, type: 'image/jpeg', name: 'p.jpg' } as any);
+          return fd;
+        })(),
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, padding: 20,  alignItems: 'center' }}>
+      <Button title="Сделать фото" onPress={take} />
+      {photo && <Image source={{ uri: photo }} style={{ width: 250, height: 250, marginTop: 20 }} />}
+    </View>
+  );
+}
+
+
+В КОНСОЛИ ЗАБЕЙТЕ ipconfig ЧТОБЫ УЗНАТЬ СВОЙ IP
+ПОЧТИ В КОНЦЕ БУДЕТ РАЗДЕЛ Адаптер беспроводной локальной сети Беспроводная сеть
+ВОТ ТАМ БУДЕТ СТРОКА IPv4-адрес. . . . . . . . . . . . : 192.168.1.12   ← другие цифры типа
+ЗАМЕНИТЕ В index.tsx СТРОКУ fetch('http://192.168.1.12:3000/upload' СО СВОИМ ЗНАЧЕНИЕМ
+
+ЗАПУСТИТЕ СЕРВЕР node server.js
+ЗАПУСТИТЕ КЛИЕНТ ЭКСПО npm start
+ФОТКИ БУДУТ ПРИСЫЛАТЬСЯ В uploads
+
 `,
 3:`
 pip install django django-allauth
@@ -394,6 +463,93 @@ if __name__ == '__main__':
 
 ОТКРЫТЬ В БРАУЗЕРЕ: http://127.0.0.1:5000
       `,
+      5:`В КОНСОЛИ pip install flask
+      
+      СОЗДАЙТЕ app.py:
+      from flask import Flask, send_file
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return send_file('index.html')
+
+@app.route('/text.html')
+def get_text():
+    return send_file('text.html')
+
+@app.route('/script.js')
+def script():
+    return send_file('script.js')
+
+if __name__ == '__main__':
+    app.run(debug=True)
+    
+    
+    
+    СОЗДАЙТЕ script.js (ОБЕРНИТЕ ({q}) В КАВЫЧКИ ПОД НАКЛОНОМ И ПОСТАВЬТЕ ДОЛЛАР ПЕРЕД {q}):
+    const A = document.getElementById('content');
+const I = document.getElementById('search');
+let M = [], i;
+ 
+const x = new XMLHttpRequest();
+x.open('GET', 'text.html');
+x.onload = () => A.innerHTML = x.responseText;
+x.send();
+ 
+I.oninput = () => {
+  const q = I.value.trim();
+  A.innerHTML = A.textContent;
+  if (q) {
+    A.innerHTML = A.textContent.replace(new RegExp(({q}), 'gi'), '<mark>$&</mark>');
+    M = A.querySelectorAll('mark');
+    i = -1;
+  }
+};
+ 
+I.onkeydown = e => {
+  if (e.key === 'Enter' && M[0]) {
+    e.preventDefault();
+    i = (i + 1) % M.length;
+    M[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+};
+
+
+
+СОЗДАЙТЕ text.html И ТУДА ЛЮБОЙ ОБЪЕМНЫЙ ТЕКСТ ЗАКИНЬТЕ
+
+
+СОЗДАЙТЕ index.html (ЗАМЕНИТЕ ! ПЕРЕД script НА <):
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Поиск</title>
+  <style>
+    mark { 
+      background: rgb(255, 0, 230); 
+      scroll-margin-top: 200px; 
+    }
+    #content {
+      padding: 20px;
+      line-height: 1.6;
+    }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <input id="search" placeholder="Поиск..." />
+  <div id="content">Загрузка...</div>
+  !script src="script.js">!/script>
+</body>
+</html>
+
+ЗАПУСТИТЕ python app.py
+    `,
       8:`СОЗДАЙТЕ index.html (ПРИМЕЧАНИЕ, ПОИСК РАБОТАЕТ ТОЛЬКО ПО ГОРОДАМ И ВОДОЕМАМ)
       ЗАМЕНИТЕ ! ПЕРЕД script на стрелочка вправо
       ВСТАВЬТЕ АПИ КЛЮЧ 97755205-3d62-402d-9df8-c3c60a4181d4 ВМЕСТО ВАШ_КЛЮЧ. НЕ СРАБОТАЕТ, САМИ БЕСПЛАТНО СГЕНЕРЬТЕ ЯНДЕКС АПИ КЛЮЧ, ТИП JavaScript API и HTTP Геокодер
@@ -1589,10 +1745,613 @@ return <Details item={item} />
 }
 
 export default App;
-`
+`,
+34:`В КОНСОЛИ  npm init -y     
+СОЗДАЙТЕ app.js:
+const express = require('express');
+const app = express();
+app.use(express.json());
+app.use(express.static('public'));
+
+let tasks = [];
+let id = 0;
+
+app.get('/tasks', (req, res) => {
+  res.json(tasks);
+});
+
+app.post('/tasks', (req, res) => {
+  const task = { id: id++, text: req.body.text, done: false };
+  tasks.push(task);
+  res.json(task);
+});
+
+app.put('/tasks/:id', (req, res) => {
+  const task = tasks.find(t => t.id == req.params.id);
+  if (task) task.text = req.body.text;
+  res.sendStatus(task ? 200 : 404);
+});
+
+app.delete('/tasks/:id', (req, res) => {
+  tasks = tasks.filter(t => t.id != req.params.id);
+  res.sendStatus(200);
+});
+
+app.listen(3000, () => console.log('http://localhost:3000'));
+
+
+
+
+СОЗДАЙТЕ public/index.html (ОБЕРНИТЕ /tasks/{id} В КАВЫЧКИ ПОД НАКЛОНОМ И ПОСТАВЬТЕ ДОЛЛАР ПереД {id} В ЭТОЙ ЖЕ СТРОКЕ
+ТАКЖЕ ОБЕРНИТЕ <li>{t.text} <input type="text" value="{t.text}" onchange="edit({t.id},this.value)"> <button onclick="remove({t.id})">Удалить</button></li> 
+И ПОСТАВЬТЕ ДОЛЛАР ПЕРЕД {t.text} В ЭТОЙ ЖЕ СТРОКЕ
+ТАКЖЕ ЗАМЕНИТЕ ! НА < ПЕРЕД Script):
+<!DOCTYPE html>
+<html>
+<head><title>Todo</title></head>
+<body>
+  <input id="inp" placeholder="Новая задача">
+  <button onclick="add()">Добавить</button>
+  <ul id="list"></ul>
+  !script>
+    function load() {
+      fetch('/tasks').then(r => r.json()).then(render);
+    }
+    function add() {
+      const text = document.getElementById('inp').value;
+      fetch('/tasks', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text}) })
+        .then(() => { document.getElementById('inp').value = ''; load(); });
+    }
+    function edit(id, text) {
+      fetch(/tasks/{id}, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text}) }).then(load);
+    }
+    function remove(id) {
+      fetch(/tasks/{id}, { method: 'DELETE' }).then(load);
+    }
+    function render(tasks) {
+      document.getElementById('list').innerHTML = tasks.map(t =>
+        <li>{t.text} <input type="text" value="{t.text}" onchange="edit({t.id},this.value)"> <button onclick="remove({t.id})">Удалить</button></li>
+      ).join('');
+    }
+    load();
+  !/script>
+</body>
+</html>
+
+
+
+ЗАПУСТИТЕ  node app.js`,
+36:`В КОНСОЛИ npx create-expo-app ./
+
+УДАЛИТЕ ВСЕ ПАПКИ И ФАЙЛЫ В ПАПКЕ app И СОЗДАЙТЕ ТАМ index.tsx
+(ОБЕРНИТЕ СТРОКУ https://newsdata.io/api/1/news?apikey={key}&country=us&language=en&category=technology В КАВЫЧКИ ПОД НАКЛОНОМ И ПОСТАВЬТЕ ДОЛЛАР ПЕРЕД {key} В ЭТОЙ ЖЕ СТРОКЕ:
+(ТАКЖЕ { uri: item.img } ОБЕРНИТЕ В ЕЩЕ ОДНИ {})
+import React, { useEffect, useState } from 'react';
+import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+
+export default function App() {
+  const [list, setList] = useState<{ id: string; title: string; desc: string; img: string | null }[]>([]);
+
+  useEffect(() => {
+    const key = 'pub_03641f1c47c6431292905220352852be';
+
+    fetch(https://newsdata.io/api/1/news?apikey={key}&country=us&language=en&category=technology)
+      .then(res => res.json())
+      .then(d => {
+        const data = d.results.map((item: any, i: number) => ({
+          id: item.pubDate + i,
+          title: item.title || 'заголовка нет!!!!!',
+          desc: item.description || 'нет описания!!!!!!!!!!',
+          img: item.image_url || null,
+        }));
+        setList(data);
+      });
+  }, []);
+
+  const Item = ({ item }: { item: { id: string; title: string; desc: string; img: string | null } }) => (
+    <View style={styles.item}>
+      <Text style={styles.title}>{item.title}</Text>
+      {item.img && <Image source={ uri: item.img } style={styles.img} />}
+      <Text style={styles.desc} numberOfLines={3}>{item.desc}</Text>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>новосте апи</Text>
+      <FlatList
+        data={list}
+        keyExtractor={item => item.id}
+        renderItem={Item}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 10 },
+  header: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginVertical: 12 },
+  item: { padding: 14, marginVertical: 6, backgroundColor: '#262d36', borderRadius: 8 },
+  title: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  img: { width: '100%', height: 160, borderRadius: 6, marginVertical: 8 },
+  desc: { color: '#fff', fontSize: 14, lineHeight: 18 },
+});
+
+
+
+ЗАПУСТИТЕ npm start
+ЕСЛИ НОВОСТИ НЕ ПОДГРУЖАЮТСЯ И ЭКРАН ПУСТ, ИДИТЕ НА newsdata.io, GET KEY API И РЕГАЙТЕСЬ, ВСТАВЬТЕ В key =  СВОЙ ПОЛУЧЕНЫЙ КЛЮЧ ВМЕСТО НАПИСАННОГО.
+ДА И ВООБЩЕ НА ВСЯКИЙ СЛУЧАЙ ЗАЙДИТЕ И ЗАРЕГАЙТЕСЬ, ЭТО ПРЕДПОЛАГАЕТСЯ ПРАКТИКОЙ`,
+37:`В КОНСОЛИ:
+npm init -y
+npm install ws
+npm install -g serve
+
+СОЗДАЙ server.js:
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 8080 }); 
+const clients = new Set();
+
+wss.on('connection', ws => {
+  clients.add(ws); 
+  ws.on('message', data => {
+    const msg = data.toString();
+    clients.forEach(client => {
+      if (client !== ws && client.readyState === 1) client.send(msg);
+    });
+  });
+});
+
+
+
+СОЗДАЙ index.html (ОБЕРНИТЕ {name}: {text} В КАВЫЧКИ ПОД НАКЛОНОМ И ПЕРЕД {name}, И ПЕРЕД {text} ПОСТАВЬТЕ ПО ДОЛЛАРУ:
+ТАКЖЕ ЗАМЕНИТЕ ! ПЕРЕД Script НА <
+<!DOCTYPE html>
+<html>
+<head>
+  <title>чатик</title>
+  <style>
+    #chat { height:300px; overflow:auto; border:1px solid #ccc; padding:10px; }
+    input { margin:5px 0; padding:8px; width:200px; }
+    button { padding:8px 12px; }
+  </style>
+</head>
+<body>
+  <h2>чатик</h2>
+  <div id="chat"></div>
+  <input id="inputName" placeholder="ваш ник">
+  <input id="inputMsg" placeholder="смс">
+  <button onclick="send()">отправить</button>
+
+  !script>
+    const chat = document.getElementById('chat');
+    const inputMsg = document.getElementById('inputMsg');
+    const inputName = document.getElementById('inputName');
+    const socket = new WebSocket('ws://localhost:8080');
+
+    socket.onmessage = (e) => {
+      const msg = document.createElement('div');
+      msg.textContent = e.data;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
     };
 
-    // Остальные практики — пока пусто
+    function send() {
+      const text = inputMsg.value.trim();
+      const name = inputName.value.trim() || 'Аноним';
+      if (text) {
+        const message = {name}: {text}; 
+        const msg = document.createElement('div');
+        msg.textContent = message;
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight; 
+        socket.send(message);
+        inputMsg.value = '';
+      }
+    } 
+    inputMsg.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') send();
+    });
+  !/script>
+</body>
+</html>
+
+
+В КОНСОЛИ node server.js
+И ЕЩЕ В ОДНОЙ КОНСОЛИ npx serve -s .
+ПЕРЕЙДИТЕ В ПОСЛЕДНЕЙ КОНСОЛИ НА ОТОБРАЖЕННЫЙ Network: адрес
+НЕСКОЛЬКО ВКЛАДОК ОТКРОЙТЕ И ПЕРЕПИСЫВАЙТЕСЬ, РАБОТАЕТ В ОДНОЙ СЕТИ НА ЛЮБОМ УСТРОЙСТВЕ`,
+38:`В КОНСОЛИ pip install flask
+
+СОЗДАЙТЕ app.py:
+from flask import Flask, request, render_template_string
+import sqlite3
+
+app = Flask(__name__)
+
+with sqlite3.connect('finance.db') as db:
+    db.execute('''CREATE TABLE IF NOT EXISTS transactions (
+        type TEXT, 
+        category TEXT, 
+        amount REAL, 
+        description TEXT, 
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        t_type = request.form['тип']
+        category = request.form['категория']
+        amount = float(request.form['сумма'])
+        description = request.form['описание']
+        with sqlite3.connect('finance.db') as db:
+            db.execute(
+                'INSERT INTO transactions (type, category, amount, description) VALUES (?, ?, ?, ?)',
+                [t_type, category, amount, description]
+            )
+
+    with sqlite3.connect('finance.db') as db:
+        db.row_factory = sqlite3.Row
+        operations = db.execute('SELECT * FROM transactions ORDER BY created_at DESC').fetchall()
+
+    balance = sum(op['amount'] if op['type'] == 'income' else -op['amount'] for op in operations)
+
+    expenses = {}
+    for op in operations:
+        if op['type'] == 'expense':
+            cat = op['category']
+            expenses[cat] = expenses.get(cat, 0) + op['amount'] 
+    with open('templates/index.html', encoding='utf-8') as f:
+        html = f.read()
+
+    return render_template_string(html, balance=balance, expenses=expenses.items(), operations=operations)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
+    
+    
+    
+    СОЗДАЙТЕ templates/index.html:
+    <!DOCTYPE html>
+<html>
+<head><title>Финансы</title></head>
+<body>
+  <h1>Учёт финансов</h1>
+  <h2>Баланс: {{ "%.2f"|format(balance) }} ₽</h2>
+
+  <form method="post">
+    <select name="тип" required>
+      <option value="income">Доход</option>
+      <option value="expense">Расход</option>
+    </select>
+    <input type="text" name="категория" placeholder="Категория" required>
+    <input type="number" step="0.01" name="сумма" placeholder="Сумма" required>
+    <input type="text" name="описание" placeholder="Описание">
+    <button type="submit">Добавить</button>
+  </form>
+
+  <h3>Расходы по категориям:</h3>
+  <ul>
+    {% for category, amount in expenses %}
+      <li>{{ category }}: {{ "%.2f"|format(amount) }} ₽</li>
+    {% else %}
+      <li>Нет расходов</li>
+    {% endfor %}
+  </ul>
+
+  <h3>История операций:</h3>
+  <table border="1" cellpadding="8">
+    <tr>
+      <th>Тип</th>
+      <th>Категория</th>
+      <th>Сумма</th>
+      <th>Описание</th>
+      <th>Дата</th>
+    </tr>
+    {% for op in operations %}
+    <tr>
+      <td>{{ op['type'].upper() }}</td>
+      <td>{{ op['category'] }}</td>
+      <td>{{ "%.2f"|format(op['amount']) }}</td>
+      <td>{{ op['description'] or "—" }}</td>
+      <td>{{ op['created_at'][:16] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
+
+
+ЗАПУСТИТЕ python app.py`,
+39:`В КОНСОЛИ pip install flask
+
+СОЗДАЙТЕ app.py:
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+
+workouts = [
+    "Приседания — 15 раз",
+    "Отжимания — 10 раз",
+    "Подтягивания — 5 раз",
+    "Бег на месте — 1 минута",
+    "Планка — 30 секунд",
+    "Скакалка — 1 минута",
+    "Выпады — 12 раз (по 6 на ногу)",
+    "Подъёмы ног лёжа — 15 раз",
+    "Махи ногами в стороны — 20 раз",
+    "Отжимания от стены — 10 раз",
+    "Пресс верх — 20 раз",
+    "Пресс косые мышцы — 15 раз на сторону",
+    "Подъём прямых ног — 12 раз",
+    "Мостик — 20 секунд",
+    "Прыжки с хлопком — 10 раз",
+    "Бёрпи — 8 раз",
+    "Обратные отжимания — 10 раз",
+    "Подтягивания широким хватом — 5 раз",
+    "Повороты корпуса — 20 раз",
+    "Наклоны в сторону — 15 раз на сторону",
+    "Приседания с прыжком — 10 раз",
+    "Отведение ноги назад — 15 раз на ногу",
+    "Сгибание рук с гантелями (или бутылками) — 12 раз",
+    "Разводка рук лёжа — 15 раз",
+    "Подъём таза — 20 раз",
+    "Планка на боку — 20 сек на сторону",
+    "Ходьба на ягодицах — 1 минута",
+    "Велосипед — 30 секунд",
+    "Пружинка — 15 раз",
+    "Повороты с мячом или бутылкой — 20 раз"
+]
+tips = [
+    "Пей воду перед едой",
+    "Ешь медленно, жуй тщательно",
+    "Добавь овощи в каждый приём пищи",
+    "Заменяй сладкое фруктами",
+    "Готовь дома — меньше соли и масла",
+    "Не пропускай завтрак",
+    "Уменьши размер порций",
+    "Избегай переработанных продуктов",
+    "Снижай сахар в чаях и кофе",
+    "Спи достаточно — это влияет на аппетит"
+]
+
+try:
+    log = open("log.txt", encoding="utf-8").read().splitlines()
+except FileNotFoundError:
+    log = []
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    global log
+    if request.method == "POST":
+        item = request.form.get("done")
+        if item and item not in log:
+            log.append(item)
+            open("log.txt", "w", encoding="utf-8").write("\n".join(log))
+    
+    html = open("templates/index.html", encoding="utf-8").read()
+    return render_template_string(html, workouts=workouts, tips=tips, log=log)
+
+if __name__ == "__main__":
+    app.run()
+    
+    
+    
+    
+    СОЗДАЙТЕ templates/index.html:
+    <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ЗОЖ</title>
+</head>
+<body>
+ 
+<div style="display: flex; gap: 40px; margin-top: 30px;">
+  <div style="flex: 1;">
+    <h2>ваша активность</h2>
+    <ul>
+      {% for a in log %}
+        <li>{{ a }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+ 
+  <div style="flex: 1;">
+    <h2>Советы по питанию</h2>
+    <ul>
+      {% for t in tips %}
+        <li>{{ t }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+
+
+<h1>Предлагаемые нами тренировки</h1>
+<div style="display: flex; gap: 2px;">
+  {% for i in [0, 1, 2] %}
+  <div style="flex: 1;">
+    {% for w in workouts[i::3] %}
+    <form method="post" style="margin: 2px 0;">
+      <input type="hidden" name="done" value="{{ w }}">
+      <label>{{ w }}</label>
+      <button type="submit" name="action" value="add">✓</button><br>
+    </form>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+</body>
+</html>
+
+
+ЗАПУСТИТЕ python app.py`,
+40:`В КОНСОЛИ: npm init -y
+
+
+СОЗДАЙТЕ server.js:
+(СТРОКУ {type}; charset=utf-8 ОБЕРНИТЕ В КАВЫЧКИ ПОД НАКЛОНОМ И ПОСТАВЬТЕ ДОЛЛАР ПЕРЕД {type} В ЭТОЙ ЖЕ СТРОКЕ
+СТРОКУ Hello {user.username}! ОБЕРНИТЕ ТАКЖЕ И ПЕРЕД {user.username} ПОСТАВЬТЕ ДОЛЛАР)
+
+const http = require('http');
+const { parse } = require('url');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const users = [];
+const SECRET = 'secret';
+
+const readBody = req => new Promise(res => {
+    let d = '';
+    req.on('data', c => d += c);
+    req.on('end', () => res(JSON.parse(d || '{}')));
+});
+
+http.createServer(async (req, res) => {
+    const { pathname } = parse(req.url);
+    const method = req.method;
+    res.setHeader('Content-Type', 'application/json');
+
+    if (pathname === '/' && method === 'GET')
+        return fs.readFile('index.html', 'utf8', (_, h) => send(res, 'text/html', h));
+
+    const data = await readBody(req);
+    const { username, password } = data;
+
+    if (pathname === '/register' && method === 'POST') {
+        if (!username || !password) return fail(res, 'No data');
+        if (users.find(u => u.username === username)) return fail(res, 'Exists');
+        users.push({ id: users.length + 1, username, password: bcrypt.hashSync(password, 10) });
+        return ok(res, 'OK');
+    }
+
+    if (pathname === '/login' && method === 'POST') {
+        const user = users.find(u => u.username === username);
+        if (!user || !bcrypt.compareSync(password, user.password)) return fail(res, 'Invalid');
+        const token = jwt.sign({ id: user.id, username }, SECRET, { expiresIn: '1h' });
+        return send(res, 'json', { token });
+    }
+
+    if (pathname === '/protected' && method === 'GET') {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return fail(res, 'No token');
+        try {
+            const user = jwt.verify(token, SECRET);
+            return ok(res, Hello {user.username}!);
+        } catch {
+            return fail(res, 'Forbidden');
+        }
+    }
+
+    fail(res, 'Not found', 404);
+}).listen(3000, () => console.log('Running on 3000'));
+
+const ok = (res, msg) => send(res, 'json', { message: msg });
+const fail = (res, err, code = 400) => send(res, 'json', { error: err }, code);
+const send = (res, type, data, code = 200) => {
+    res.writeHead(code, { 'Content-Type': {type}; charset=utf-8 });
+    res.end(type === 'json' ? JSON.stringify(data) : data);
+};
+
+
+
+
+СОЗДАЙТЕ index.html (ЗАМЕНИТЕ ! ПЕРЕД script НА <:
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Auth</title></head>
+<body>
+  <h3>Регистрация</h3>
+  Логин: <input id="ru"><br>
+  Пароль: <input id="rp" type="password"><br>
+  <button onclick="post('/register')">Регистрация</button>
+
+  <h3>Вход</h3>
+  Логин: <input id="lu"><br>
+  Пароль: <input id="lp" type="password"><br>
+  <button id="btn" onclick="login()">Войти</button>
+
+  <h3>Действие</h3>
+  <button onclick="get()">Получить данные</button>
+  <pre id="out"></pre>
+
+!script>
+let token = '';
+
+function post(url, callback = null) {
+  const u = document.getElementById(url === '/register' ? 'ru' : 'lu').value;
+  const p = document.getElementById(url === '/register' ? 'rp' : 'lp').value;
+
+  if (!u || !p) {
+    return document.getElementById('out').innerText = 'Заполните поля';
+  }
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: u, password: p })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (callback) {
+      callback(data);
+    } else {
+      document.getElementById('out').innerText = JSON.stringify(data, 0, 2);
+    }
+  })
+  .catch(err => {
+    document.getElementById('out').innerText = 'Ошибка соединения';
+  });
+}
+ 
+function login() {
+  post('/login', (data) => {
+    if (data.token) {
+      token = data.token;
+      document.getElementById('out').innerText = 'Авторизация успешна';
+    } else {
+      document.getElementById('out').innerText = (data.error || 'Ошибка входа');
+    }
+    updateBtn();
+  });
+}
+ 
+function get() {
+  if (!token) {
+    return document.getElementById('out').innerText = 'Сначала войдите в систему';
+  }
+  fetch('/protected', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('out').innerText = JSON.stringify(data, 0, 2);
+  })
+  .catch(() => {
+    document.getElementById('out').innerText = 'Ошибка доступа';
+  });
+}
+ 
+function updateBtn() {
+  const b = document.getElementById('btn');
+  b.innerText = token ? 'Выйти' : 'Войти';
+  b.onclick = token 
+    ? () => { token = ''; document.getElementById('out').innerText = 'Вы вышли'; updateBtn(); }
+    : login;
+}
+ 
+updateBtn();
+!/script>
+</body>
+</html>
+`
+    };
+ 
     for (let i = 1; i <= 40; i++) {
       if (!practices[i]) {
         practices[i] = `Код для практики ${i} ещё не добавлен.`;
