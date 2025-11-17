@@ -464,94 +464,511 @@ if __name__ == '__main__':
 ОТКРЫТЬ В БРАУЗЕРЕ: http://127.0.0.1:5000
       `,
       5:`В КОНСОЛИ pip install flask
-      
-      СОЗДАЙТЕ app.py:
-      from flask import Flask, send_file
 
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return send_file('index.html')
-
-@app.route('/text.html')
-def get_text():
-    return send_file('text.html')
-
-@app.route('/script.js')
-def script():
-    return send_file('script.js')
-
-if __name__ == '__main__':
-    app.run(debug=True)
-    
-    
-    
-    СОЗДАЙТЕ script.js (ОБЕРНИТЕ ({q}) В КАВЫЧКИ ПОД НАКЛОНОМ И ПОСТАВЬТЕ ДОЛЛАР ПЕРЕД {q}):
-    const A = document.getElementById('content');
-const I = document.getElementById('search');
-let M = [], i;
- 
-const x = new XMLHttpRequest();
-x.open('GET', 'text.html');
-x.onload = () => A.innerHTML = x.responseText;
-x.send();
- 
-I.oninput = () => {
-  const q = I.value.trim();
-  A.innerHTML = A.textContent;
-  if (q) {
-    A.innerHTML = A.textContent.replace(new RegExp(({q}), 'gi'), '<mark>$&</mark>');
-    M = A.querySelectorAll('mark');
-    i = -1;
-  }
-};
- 
-I.onkeydown = e => {
-  if (e.key === 'Enter' && M[0]) {
-    e.preventDefault();
-    i = (i + 1) % M.length;
-    M[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }
-};
-
-
-
-СОЗДАЙТЕ text.html И ТУДА ЛЮБОЙ ОБЪЕМНЫЙ ТЕКСТ ЗАКИНЬТЕ
-
-
-СОЗДАЙТЕ index.html (ЗАМЕНИТЕ ! ПЕРЕД script НА <):
-<!DOCTYPE html>
+      СОЗДАЙТЕ index.html (ЗАМЕНИТЕ ! ПЕРЕД script НА <):
+      <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Поиск</title>
+  <title>Флаги</title>
   <style>
-    mark { 
-      background: rgb(255, 0, 230); 
-      scroll-margin-top: 200px; 
+    #c { 
+      display: grid; 
+      grid-template-columns: repeat(4,1fr); 
+      gap: 15px;  
+      margin: 0 auto 
     }
-    #content {
-      padding: 20px;
-      line-height: 1.6;
-    }
-    body {
-      margin: 0;
-      font-family: sans-serif;
+    .card { text-align: center; border: 1px solid #000000;  }
+    .card img { width: 100% }
+    input { 
+      display: block; 
+      margin: 20px auto; 
+      padding: 10px; 
+      width: 300px 
     }
   </style>
 </head>
 <body>
-  <input id="search" placeholder="Поиск..." />
-  <div id="content">Загрузка...</div>
+  <h1 align="center">Флаги стран</h1>
+  <input id="s" placeholder="Поиск..." />
+  <div id="c">Загрузка...</div>
   !script src="script.js">!/script>
 </body>
 </html>
 
-ЗАПУСТИТЕ python app.py
+
+
+СОЗДАЙТЕ server.py:
+from flask import Flask, send_file, request
+
+app = Flask(__name__)
+
+@app.route('/')
+@app.route('/countries.json')
+@app.route('/script.js')
+def static_files():
+    return send_file('index.html' if request.path == '/' else request.path[1:])
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+
+    СОЗДАЙТЕ script.js (ОБЕРНИТЕ <div class="card"><img src="{i.flag.trim()}" alt="{i.name}"><div>{i.name}</div></div> В КАВЫЧКИ ПОД НАКЛОНОМ И ПОСТАВЬТЕ ДОЛЛАР ПЕРЕД {i.flag.trim()} и {i.name} В ЭТОЙ ЖЕ СТРОКЕ):
+const c = document.getElementById('c');
+const s = document.getElementById('s');
+let data = [];
+
+const x = new XMLHttpRequest();
+x.open('GET', '/countries.json');
+x.onload = () => {
+  data = JSON.parse(x.responseText);
+  render(data);
+};
+x.onerror = () => c.innerHTML = 'Ошибка';
+x.send();
+ 
+s.oninput = () => {
+  const q = s.value.trim().toLowerCase();
+  render(q ? data.filter(i => i.name.toLowerCase().includes(q)) : data);
+};
+ 
+function render(list) {
+  c.innerHTML = list.length 
+    ? list.map(i => <div class="card"><img src="{i.flag.trim()}" alt="{i.name}"><div>{i.name}</div></div>).join('')
+    : '<div style="grid-column:1/-1;text-align:center;color:#999">Ничего не найдено</div>';
+}
+
+
+
+СОЗДАЙТЕ countries.json:
+[
+  { "name": "Австралия", "flag": "https://flagcdn.com/w320/au.png" },
+  { "name": "Австрия", "flag": "https://flagcdn.com/w320/at.png" },
+  { "name": "Азербайджан", "flag": "https://flagcdn.com/w320/az.png" },
+  { "name": "Албания", "flag": "https://flagcdn.com/w320/al.png" },
+  { "name": "Алжир", "flag": "https://flagcdn.com/w320/dz.png" },
+  { "name": "Ангола", "flag": "https://flagcdn.com/w320/ao.png" },
+  { "name": "Аргентина", "flag": "https://flagcdn.com/w320/ar.png" },
+  { "name": "Армения", "flag": "https://flagcdn.com/w320/am.png" },
+  { "name": "Афганистан", "flag": "https://flagcdn.com/w320/af.png" },
+  { "name": "Бахрейн", "flag": "https://flagcdn.com/w320/bh.png" },
+  { "name": "Бангладеш", "flag": "https://flagcdn.com/w320/bd.png" },
+  { "name": "Барбадос", "flag": "https://flagcdn.com/w320/bb.png" },
+  { "name": "Беларусь", "flag": "https://flagcdn.com/w320/by.png" },
+  { "name": "Бельгия", "flag": "https://flagcdn.com/w320/be.png" },
+  { "name": "Бенин", "flag": "https://flagcdn.com/w320/bj.png" },
+  { "name": "Болгария", "flag": "https://flagcdn.com/w320/bg.png" },
+  { "name": "Боливия", "flag": "https://flagcdn.com/w320/bo.png" },
+  { "name": "Босния и Герцеговина", "flag": "https://flagcdn.com/w320/ba.png" },
+  { "name": "Ботсвана", "flag": "https://flagcdn.com/w320/bw.png" },
+  { "name": "Бразилия", "flag": "https://flagcdn.com/w320/br.png" },
+  { "name": "Бруней", "flag": "https://flagcdn.com/w320/bn.png" },
+  { "name": "Буркина-Фасо", "flag": "https://flagcdn.com/w320/bf.png" },
+  { "name": "Бурунди", "flag": "https://flagcdn.com/w320/bi.png" },
+  { "name": "Бутан", "flag": "https://flagcdn.com/w320/bt.png" },
+  { "name": "Вануату", "flag": "https://flagcdn.com/w320/vu.png" },
+  { "name": "Великобритания", "flag": "https://flagcdn.com/w320/gb.png" },
+  { "name": "Венгрия", "flag": "https://flagcdn.com/w320/hu.png" },
+  { "name": "Венесуэла", "flag": "https://flagcdn.com/w320/ve.png" },
+  { "name": "Восточный Тимор", "flag": "https://flagcdn.com/w320/tl.png" },
+  { "name": "Вьетнам", "flag": "https://flagcdn.com/w320/vn.png" },
+  { "name": "Габон", "flag": "https://flagcdn.com/w320/ga.png" },
+  { "name": "Гаити", "flag": "https://flagcdn.com/w320/ht.png" },
+  { "name": "Гайана", "flag": "https://flagcdn.com/w320/gy.png" },
+  { "name": "Гамбия", "flag": "https://flagcdn.com/w320/gm.png" },
+  { "name": "Гана", "flag": "https://flagcdn.com/w320/gh.png" },
+  { "name": "Гватемала", "flag": "https://flagcdn.com/w320/gt.png" },
+  { "name": "Гвинея", "flag": "https://flagcdn.com/w320/gn.png" },
+  { "name": "Гвинея-Бисау", "flag": "https://flagcdn.com/w320/gw.png" },
+  { "name": "Германия", "flag": "https://flagcdn.com/w320/de.png" },
+  { "name": "Гондурас", "flag": "https://flagcdn.com/w320/hn.png" },
+  { "name": "Гренада", "flag": "https://flagcdn.com/w320/gd.png" },
+  { "name": "Греция", "flag": "https://flagcdn.com/w320/gr.png" },
+  { "name": "Грузия", "flag": "https://flagcdn.com/w320/ge.png" },
+  { "name": "Дания", "flag": "https://flagcdn.com/w320/dk.png" },
+  { "name": "Джибути", "flag": "https://flagcdn.com/w320/dj.png" },
+  { "name": "Доминика", "flag": "https://flagcdn.com/w320/dm.png" },
+  { "name": "Доминиканская Республика", "flag": "https://flagcdn.com/w320/do.png" },
+  { "name": "Египет", "flag": "https://flagcdn.com/w320/eg.png" },
+  { "name": "Замбия", "flag": "https://flagcdn.com/w320/zm.png" },
+  { "name": "Зимбабве", "flag": "https://flagcdn.com/w320/zw.png" },
+  { "name": "Израиль", "flag": "https://flagcdn.com/w320/il.png" },
+  { "name": "Индия", "flag": "https://flagcdn.com/w320/in.png" },
+  { "name": "Индонезия", "flag": "https://flagcdn.com/w320/id.png" },
+  { "name": "Иордания", "flag": "https://flagcdn.com/w320/jo.png" },
+  { "name": "Ирак", "flag": "https://flagcdn.com/w320/iq.png" },
+  { "name": "Иран", "flag": "https://flagcdn.com/w320/ir.png" },
+  { "name": "Ирландия", "flag": "https://flagcdn.com/w320/ie.png" },
+  { "name": "Исландия", "flag": "https://flagcdn.com/w320/is.png" },
+  { "name": "Испания", "flag": "https://flagcdn.com/w320/es.png" },
+  { "name": "Италия", "flag": "https://flagcdn.com/w320/it.png" },
+  { "name": "Йемен", "flag": "https://flagcdn.com/w320/ye.png" },
+  { "name": "Кабо-Верде", "flag": "https://flagcdn.com/w320/cv.png" },
+  { "name": "Казахстан", "flag": "https://flagcdn.com/w320/kz.png" },
+  { "name": "Камбоджа", "flag": "https://flagcdn.com/w320/kh.png" },
+  { "name": "Камерун", "flag": "https://flagcdn.com/w320/cm.png" },
+  { "name": "Канада", "flag": "https://flagcdn.com/w320/ca.png" },
+  { "name": "Катар", "flag": "https://flagcdn.com/w320/qa.png" },
+  { "name": "Кения", "flag": "https://flagcdn.com/w320/ke.png" },
+  { "name": "Кипр", "flag": "https://flagcdn.com/w320/cy.png" },
+  { "name": "Киргизия", "flag": "https://flagcdn.com/w320/kg.png" },
+  { "name": "Кирибати", "flag": "https://flagcdn.com/w320/ki.png" },
+  { "name": "Китай", "flag": "https://flagcdn.com/w320/cn.png" },
+  { "name": "Колумбия", "flag": "https://flagcdn.com/w320/co.png" },
+  { "name": "Коморы", "flag": "https://flagcdn.com/w320/km.png" },
+  { "name": "Конго", "flag": "https://flagcdn.com/w320/cg.png" },
+  { "name": "Демократическая Республика Конго", "flag": "https://flagcdn.com/w320/cd.png" },
+  { "name": "Корея Северная", "flag": "https://flagcdn.com/w320/kp.png" },
+  { "name": "Корея Южная", "flag": "https://flagcdn.com/w320/kr.png" },
+  { "name": "Косово", "flag": "https://flagcdn.com/w320/xk.png" },
+  { "name": "Коста-Рика", "flag": "https://flagcdn.com/w320/cr.png" },
+  { "name": "Кот-д’Ивуар", "flag": "https://flagcdn.com/w320/ci.png" },
+  { "name": "Куба", "flag": "https://flagcdn.com/w320/cu.png" },
+  { "name": "Кувейт", "flag": "https://flagcdn.com/w320/kw.png" },
+  { "name": "Лаос", "flag": "https://flagcdn.com/w320/la.png" },
+  { "name": "Латвия", "flag": "https://flagcdn.com/w320/lv.png" },
+  { "name": "Лесото", "flag": "https://flagcdn.com/w320/ls.png" },
+  { "name": "Либерия", "flag": "https://flagcdn.com/w320/lr.png" },
+  { "name": "Ливан", "flag": "https://flagcdn.com/w320/lb.png" },
+  { "name": "Ливия", "flag": "https://flagcdn.com/w320/ly.png" },
+  { "name": "Литва", "flag": "https://flagcdn.com/w320/lt.png" },
+  { "name": "Лихтенштейн", "flag": "https://flagcdn.com/w320/li.png" },
+  { "name": "Люксембург", "flag": "https://flagcdn.com/w320/lu.png" },
+  { "name": "Маврикий", "flag": "https://flagcdn.com/w320/mu.png" },
+  { "name": "Мавритания", "flag": "https://flagcdn.com/w320/mr.png" },
+  { "name": "Мадагаскар", "flag": "https://flagcdn.com/w320/mg.png" },
+  { "name": "Македония", "flag": "https://flagcdn.com/w320/mk.png" },
+  { "name": "Малави", "flag": "https://flagcdn.com/w320/mw.png" },
+  { "name": "Малайзия", "flag": "https://flagcdn.com/w320/my.png" },
+  { "name": "Мали", "flag": "https://flagcdn.com/w320/ml.png" },
+  { "name": "Мальдивы", "flag": "https://flagcdn.com/w320/mv.png" },
+  { "name": "Мальта", "flag": "https://flagcdn.com/w320/mt.png" },
+  { "name": "Марокко", "flag": "https://flagcdn.com/w320/ma.png" },
+  { "name": "Мексика", "flag": "https://flagcdn.com/w320/mx.png" },
+  { "name": "Мозамбик", "flag": "https://flagcdn.com/w320/mz.png" },
+  { "name": "Молдавия", "flag": "https://flagcdn.com/w320/md.png" },
+  { "name": "Монако", "flag": "https://flagcdn.com/w320/mc.png" },
+  { "name": "Монголия", "flag": "https://flagcdn.com/w320/mn.png" },
+  { "name": "Мьянма (Бирма)", "flag": "https://flagcdn.com/w320/mm.png" },
+  { "name": "Намибия", "flag": "https://flagcdn.com/w320/na.png" },
+  { "name": "Науру", "flag": "https://flagcdn.com/w320/nr.png" },
+  { "name": "Непал", "flag": "https://flagcdn.com/w320/np.png" },
+  { "name": "Нигер", "flag": "https://flagcdn.com/w320/ne.png" },
+  { "name": "Нигерия", "flag": "https://flagcdn.com/w320/ng.png" },
+  { "name": "Нидерланды", "flag": "https://flagcdn.com/w320/nl.png" },
+  { "name": "Новая Зеландия", "flag": "https://flagcdn.com/w320/nz.png" },
+  { "name": "Норвегия", "flag": "https://flagcdn.com/w320/no.png" },
+  { "name": "ОАЭ", "flag": "https://flagcdn.com/w320/ae.png" },
+  { "name": "Оман", "flag": "https://flagcdn.com/w320/om.png" },
+  { "name": "Пакистан", "flag": "https://flagcdn.com/w320/pk.png" },
+  { "name": "Палау", "flag": "https://flagcdn.com/w320/pw.png" },
+  { "name": "Панама", "flag": "https://flagcdn.com/w320/pa.png" },
+  { "name": "Папуа — Новая Гвинея", "flag": "https://flagcdn.com/w320/pg.png" },
+  { "name": "Парагвай", "flag": "https://flagcdn.com/w320/py.png" },
+  { "name": "Перу", "flag": "https://flagcdn.com/w320/pe.png" },
+  { "name": "Польша", "flag": "https://flagcdn.com/w320/pl.png" },
+  { "name": "Португалия", "flag": "https://flagcdn.com/w320/pt.png" },
+  { "name": "Руанда", "flag": "https://flagcdn.com/w320/rw.png" },
+  { "name": "Румыния", "flag": "https://flagcdn.com/w320/ro.png" },
+  { "name": "Сальвадор", "flag": "https://flagcdn.com/w320/sv.png" },
+  { "name": "Самоа", "flag": "https://flagcdn.com/w320/ws.png" },
+  { "name": "Сан-Марино", "flag": "https://flagcdn.com/w320/sm.png" },
+  { "name": "Саудовская Аравия", "flag": "https://flagcdn.com/w320/sa.png" },
+  { "name": "Северная Македония", "flag": "https://flagcdn.com/w320/mk.png" },
+  { "name": "Сейшелы", "flag": "https://flagcdn.com/w320/sc.png" },
+  { "name": "Сенегал", "flag": "https://flagcdn.com/w320/sn.png" },
+  { "name": "Сербия", "flag": "https://flagcdn.com/w320/rs.png" },
+  { "name": "Сингапур", "flag": "https://flagcdn.com/w320/sg.png" },
+  { "name": "Сирия", "flag": "https://flagcdn.com/w320/sy.png" },
+  { "name": "Словакия", "flag": "https://flagcdn.com/w320/sk.png" },
+  { "name": "Словения", "flag": "https://flagcdn.com/w320/si.png" },
+  { "name": "Сомали", "flag": "https://flagcdn.com/w320/so.png" },
+  { "name": "Судан", "flag": "https://flagcdn.com/w320/sd.png" },
+  { "name": "Суринам", "flag": "https://flagcdn.com/w320/sr.png" },
+  { "name": "США", "flag": "https://flagcdn.com/w320/us.png" },
+  { "name": "Сьерра-Леоне", "flag": "https://flagcdn.com/w320/sl.png" },
+  { "name": "Таджикистан", "flag": "https://flagcdn.com/w320/tj.png" },
+  { "name": "Таиланд", "flag": "https://flagcdn.com/w320/th.png" },
+  { "name": "Танзания", "flag": "https://flagcdn.com/w320/tz.png" },
+  { "name": "Того", "flag": "https://flagcdn.com/w320/tg.png" },
+  { "name": "Тонга", "flag": "https://flagcdn.com/w320/to.png" },
+  { "name": "Тринидад и Тобаго", "flag": "https://flagcdn.com/w320/tt.png" },
+  { "name": "Тунис", "flag": "https://flagcdn.com/w320/tn.png" },
+  { "name": "Туркменистан", "flag": "https://flagcdn.com/w320/tm.png" },
+  { "name": "Турция", "flag": "https://flagcdn.com/w320/tr.png" },
+  { "name": "Уганда", "flag": "https://flagcdn.com/w320/ug.png" },
+  { "name": "Узбекистан", "flag": "https://flagcdn.com/w320/uz.png" },
+  { "name": "Украина", "flag": "https://flagcdn.com/w320/ua.png" },
+  { "name": "Уругвай", "flag": "https://flagcdn.com/w320/uy.png" },
+  { "name": "Фиджи", "flag": "https://flagcdn.com/w320/fj.png" },
+  { "name": "Филиппины", "flag": "https://flagcdn.com/w320/ph.png" },
+  { "name": "Финляндия", "flag": "https://flagcdn.com/w320/fi.png" },
+  { "name": "Франция", "flag": "https://flagcdn.com/w320/fr.png" },
+  { "name": "Хорватия", "flag": "https://flagcdn.com/w320/hr.png" },
+  { "name": "Центральноафриканская Республика", "flag": "https://flagcdn.com/w320/cf.png" },
+  { "name": "Чад", "flag": "https://flagcdn.com/w320/td.png" },
+  { "name": "Черногория", "flag": "https://flagcdn.com/w320/me.png" },
+  { "name": "Чехия", "flag": "https://flagcdn.com/w320/cz.png" },
+  { "name": "Чили", "flag": "https://flagcdn.com/w320/cl.png" },
+  { "name": "Швейцария", "flag": "https://flagcdn.com/w320/ch.png" },
+  { "name": "Швеция", "flag": "https://flagcdn.com/w320/se.png" },
+  { "name": "Шри-Ланка", "flag": "https://flagcdn.com/w320/lk.png" },
+  { "name": "Эквадор", "flag": "https://flagcdn.com/w320/ec.png" },
+  { "name": "Эритрея", "flag": "https://flagcdn.com/w320/er.png" },
+  { "name": "Эстония", "flag": "https://flagcdn.com/w320/ee.png" },
+  { "name": "Эфиопия", "flag": "https://flagcdn.com/w320/et.png" },
+  { "name": "Южно-Африканская Республика", "flag": "https://flagcdn.com/w320/za.png" },
+  { "name": "Ямайка", "flag": "https://flagcdn.com/w320/jm.png" },
+  { "name": "Япония", "flag": "https://flagcdn.com/w320/jp.png" }
+]
+
+
+
+ЗАПУСТИТЕ python server.py
+
+    `,
+    6:`В КОНСОЛИ npx create-react-app ./
+
+В ПАПКЕ src ЗАМЕНИТЕ App.js НА:
+import React, { useState } from 'react';
+import countries from './countries';
+
+export default function App() {
+  const [query, setQuery] = useState('');
+  const filtered = query.trim()
+    ? countries.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+    : countries;
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1 style={center}>Флаги стран</h1>
+      <input
+        placeholder="Поиск по названию..."
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        style={inputStyle}
+      />
+      <div style={gridStyle}>
+        {filtered.map((c, i) => (
+          <div key={i} style={cardStyle}>
+            <img src={c.flag} alt={c.name} style={imgStyle} />
+            <div style={nameStyle}>{c.name}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const center = { textAlign: 'center' };
+const inputStyle = {
+  display: 'block', margin: '0 auto 20px auto', padding: '10px',
+  fontSize: '16px', width: '300px'
+};
+const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '15px' };
+const cardStyle = {
+  border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden',
+  textAlign: 'center', backgroundColor: '#f9f9f9'
+};
+const imgStyle = { width: '100%', height: 'auto', display: 'block' };
+const nameStyle = { padding: '10px', fontWeight: 'bold' };
+
+
+
+
+СОЗДАЙТЕ countries.js В ПАПКЕ src:
+export default [
+  { name: 'Австралия', flag: 'https://flagcdn.com/w320/au.png' },
+  { name: 'Австрия', flag: 'https://flagcdn.com/w320/at.png' },
+  { name: 'Азербайджан', flag: 'https://flagcdn.com/w320/az.png' },
+  { name: 'Албания', flag: 'https://flagcdn.com/w320/al.png' },
+  { name: 'Алжир', flag: 'https://flagcdn.com/w320/dz.png' },
+  { name: 'Ангола', flag: 'https://flagcdn.com/w320/ao.png' },
+  { name: 'Аргентина', flag: 'https://flagcdn.com/w320/ar.png' },
+  { name: 'Армения', flag: 'https://flagcdn.com/w320/am.png' },
+  { name: 'Афганистан', flag: 'https://flagcdn.com/w320/af.png' },
+  { name: 'Бахрейн', flag: 'https://flagcdn.com/w320/bh.png' },
+  { name: 'Бангладеш', flag: 'https://flagcdn.com/w320/bd.png' },
+  { name: 'Барбадос', flag: 'https://flagcdn.com/w320/bb.png' },
+  { name: 'Беларусь', flag: 'https://flagcdn.com/w320/by.png' },
+  { name: 'Бельгия', flag: 'https://flagcdn.com/w320/be.png' },
+  { name: 'Бенин', flag: 'https://flagcdn.com/w320/bj.png' },
+  { name: 'Болгария', flag: 'https://flagcdn.com/w320/bg.png' },
+  { name: 'Боливия', flag: 'https://flagcdn.com/w320/bo.png' },
+  { name: 'Босния и Герцеговина', flag: 'https://flagcdn.com/w320/ba.png' },
+  { name: 'Ботсвана', flag: 'https://flagcdn.com/w320/bw.png' },
+  { name: 'Бразилия', flag: 'https://flagcdn.com/w320/br.png' },
+  { name: 'Бруней', flag: 'https://flagcdn.com/w320/bn.png' },
+  { name: 'Буркина-Фасо', flag: 'https://flagcdn.com/w320/bf.png' },
+  { name: 'Бурунди', flag: 'https://flagcdn.com/w320/bi.png' },
+  { name: 'Бутан', flag: 'https://flagcdn.com/w320/bt.png' },
+  { name: 'Вануату', flag: 'https://flagcdn.com/w320/vu.png' },
+  { name: 'Великобритания', flag: 'https://flagcdn.com/w320/gb.png' },
+  { name: 'Венгрия', flag: 'https://flagcdn.com/w320/hu.png' },
+  { name: 'Венесуэла', flag: 'https://flagcdn.com/w320/ve.png' },
+  { name: 'Восточный Тимор', flag: 'https://flagcdn.com/w320/tl.png' },
+  { name: 'Вьетнам', flag: 'https://flagcdn.com/w320/vn.png' },
+  { name: 'Габон', flag: 'https://flagcdn.com/w320/ga.png' },
+  { name: 'Гаити', flag: 'https://flagcdn.com/w320/ht.png' },
+  { name: 'Гайана', flag: 'https://flagcdn.com/w320/gy.png' },
+  { name: 'Гамбия', flag: 'https://flagcdn.com/w320/gm.png' },
+  { name: 'Гана', flag: 'https://flagcdn.com/w320/gh.png' },
+  { name: 'Гватемала', flag: 'https://flagcdn.com/w320/gt.png' },
+  { name: 'Гвинея', flag: 'https://flagcdn.com/w320/gn.png' },
+  { name: 'Гвинея-Бисау', flag: 'https://flagcdn.com/w320/gw.png' },
+  { name: 'Германия', flag: 'https://flagcdn.com/w320/de.png' },
+  { name: 'Гондурас', flag: 'https://flagcdn.com/w320/hn.png' },
+  { name: 'Гренада', flag: 'https://flagcdn.com/w320/gd.png' },
+  { name: 'Греция', flag: 'https://flagcdn.com/w320/gr.png' },
+  { name: 'Грузия', flag: 'https://flagcdn.com/w320/ge.png' },
+  { name: 'Дания', flag: 'https://flagcdn.com/w320/dk.png' },
+  { name: 'Джибути', flag: 'https://flagcdn.com/w320/dj.png' },
+  { name: 'Доминика', flag: 'https://flagcdn.com/w320/dm.png' },
+  { name: 'Доминиканская Республика', flag: 'https://flagcdn.com/w320/do.png' },
+  { name: 'Египет', flag: 'https://flagcdn.com/w320/eg.png' },
+  { name: 'Замбия', flag: 'https://flagcdn.com/w320/zm.png' },
+  { name: 'Зимбабве', flag: 'https://flagcdn.com/w320/zw.png' },
+  { name: 'Израиль', flag: 'https://flagcdn.com/w320/il.png' },
+  { name: 'Индия', flag: 'https://flagcdn.com/w320/in.png' },
+  { name: 'Индонезия', flag: 'https://flagcdn.com/w320/id.png' },
+  { name: 'Иордания', flag: 'https://flagcdn.com/w320/jo.png' },
+  { name: 'Ирак', flag: 'https://flagcdn.com/w320/iq.png' },
+  { name: 'Иран', flag: 'https://flagcdn.com/w320/ir.png' },
+  { name: 'Ирландия', flag: 'https://flagcdn.com/w320/ie.png' },
+  { name: 'Исландия', flag: 'https://flagcdn.com/w320/is.png' },
+  { name: 'Испания', flag: 'https://flagcdn.com/w320/es.png' },
+  { name: 'Италия', flag: 'https://flagcdn.com/w320/it.png' },
+  { name: 'Йемен', flag: 'https://flagcdn.com/w320/ye.png' },
+  { name: 'Кабо-Верде', flag: 'https://flagcdn.com/w320/cv.png' },
+  { name: 'Казахстан', flag: 'https://flagcdn.com/w320/kz.png' },
+  { name: 'Камбоджа', flag: 'https://flagcdn.com/w320/kh.png' },
+  { name: 'Камерун', flag: 'https://flagcdn.com/w320/cm.png' },
+  { name: 'Канада', flag: 'https://flagcdn.com/w320/ca.png' },
+  { name: 'Катар', flag: 'https://flagcdn.com/w320/qa.png' },
+  { name: 'Кения', flag: 'https://flagcdn.com/w320/ke.png' },
+  { name: 'Кипр', flag: 'https://flagcdn.com/w320/cy.png' },
+  { name: 'Киргизия', flag: 'https://flagcdn.com/w320/kg.png' },
+  { name: 'Кирибати', flag: 'https://flagcdn.com/w320/ki.png' },
+  { name: 'Китай', flag: 'https://flagcdn.com/w320/cn.png' },
+  { name: 'Колумбия', flag: 'https://flagcdn.com/w320/co.png' },
+  { name: 'Коморы', flag: 'https://flagcdn.com/w320/km.png' },
+  { name: 'Конго', flag: 'https://flagcdn.com/w320/cg.png' },
+  { name: 'Демократическая Республика Конго', flag: 'https://flagcdn.com/w320/cd.png' },
+  { name: 'Корея Северная', flag: 'https://flagcdn.com/w320/kp.png' },
+  { name: 'Корея Южная', flag: 'https://flagcdn.com/w320/kr.png' },
+  { name: 'Косово', flag: 'https://flagcdn.com/w320/xk.png' },
+  { name: 'Коста-Рика', flag: 'https://flagcdn.com/w320/cr.png' },
+  { name: 'Кот-д’Ивуар', flag: 'https://flagcdn.com/w320/ci.png' },
+  { name: 'Куба', flag: 'https://flagcdn.com/w320/cu.png' },
+  { name: 'Кувейт', flag: 'https://flagcdn.com/w320/kw.png' },
+  { name: 'Лаос', flag: 'https://flagcdn.com/w320/la.png' },
+  { name: 'Латвия', flag: 'https://flagcdn.com/w320/lv.png' },
+  { name: 'Лесото', flag: 'https://flagcdn.com/w320/ls.png' },
+  { name: 'Либерия', flag: 'https://flagcdn.com/w320/lr.png' },
+  { name: 'Ливан', flag: 'https://flagcdn.com/w320/lb.png' },
+  { name: 'Ливия', flag: 'https://flagcdn.com/w320/ly.png' },
+  { name: 'Литва', flag: 'https://flagcdn.com/w320/lt.png' },
+  { name: 'Лихтенштейн', flag: 'https://flagcdn.com/w320/li.png' },
+  { name: 'Люксембург', flag: 'https://flagcdn.com/w320/lu.png' },
+  { name: 'Маврикий', flag: 'https://flagcdn.com/w320/mu.png' },
+  { name: 'Мавритания', flag: 'https://flagcdn.com/w320/mr.png' },
+  { name: 'Мадагаскар', flag: 'https://flagcdn.com/w320/mg.png' },
+  { name: 'Македония', flag: 'https://flagcdn.com/w320/mk.png' },
+  { name: 'Малави', flag: 'https://flagcdn.com/w320/mw.png' },
+  { name: 'Малайзия', flag: 'https://flagcdn.com/w320/my.png' },
+  { name: 'Мали', flag: 'https://flagcdn.com/w320/ml.png' },
+  { name: 'Мальдивы', flag: 'https://flagcdn.com/w320/mv.png' },
+  { name: 'Мальта', flag: 'https://flagcdn.com/w320/mt.png' },
+  { name: 'Марокко', flag: 'https://flagcdn.com/w320/ma.png' },
+  { name: 'Мексика', flag: 'https://flagcdn.com/w320/mx.png' },
+  { name: 'Мозамбик', flag: 'https://flagcdn.com/w320/mz.png' },
+  { name: 'Молдавия', flag: 'https://flagcdn.com/w320/md.png' },
+  { name: 'Монако', flag: 'https://flagcdn.com/w320/mc.png' },
+  { name: 'Монголия', flag: 'https://flagcdn.com/w320/mn.png' },
+  { name: 'Мьянма (Бирма)', flag: 'https://flagcdn.com/w320/mm.png' },
+  { name: 'Намибия', flag: 'https://flagcdn.com/w320/na.png' },
+  { name: 'Науру', flag: 'https://flagcdn.com/w320/nr.png' },
+  { name: 'Непал', flag: 'https://flagcdn.com/w320/np.png' },
+  { name: 'Нигер', flag: 'https://flagcdn.com/w320/ne.png' },
+  { name: 'Нигерия', flag: 'https://flagcdn.com/w320/ng.png' },
+  { name: 'Нидерланды', flag: 'https://flagcdn.com/w320/nl.png' },
+  { name: 'Новая Зеландия', flag: 'https://flagcdn.com/w320/nz.png' },
+  { name: 'Норвегия', flag: 'https://flagcdn.com/w320/no.png' },
+  { name: 'ОАЭ', flag: 'https://flagcdn.com/w320/ae.png' },
+  { name: 'Оман', flag: 'https://flagcdn.com/w320/om.png' },
+  { name: 'Пакистан', flag: 'https://flagcdn.com/w320/pk.png' },
+  { name: 'Палау', flag: 'https://flagcdn.com/w320/pw.png' },
+  { name: 'Панама', flag: 'https://flagcdn.com/w320/pa.png' },
+  { name: 'Папуа — Новая Гвинея', flag: 'https://flagcdn.com/w320/pg.png' },
+  { name: 'Парагвай', flag: 'https://flagcdn.com/w320/py.png' },
+  { name: 'Перу', flag: 'https://flagcdn.com/w320/pe.png' },
+  { name: 'Польша', flag: 'https://flagcdn.com/w320/pl.png' },
+  { name: 'Португалия', flag: 'https://flagcdn.com/w320/pt.png' },
+  { name: 'Руанда', flag: 'https://flagcdn.com/w320/rw.png' },
+  { name: 'Румыния', flag: 'https://flagcdn.com/w320/ro.png' },
+  { name: 'Сальвадор', flag: 'https://flagcdn.com/w320/sv.png' },
+  { name: 'Самоа', flag: 'https://flagcdn.com/w320/ws.png' },
+  { name: 'Сан-Марино', flag: 'https://flagcdn.com/w320/sm.png' },
+  { name: 'Саудовская Аравия', flag: 'https://flagcdn.com/w320/sa.png' },
+  { name: 'Северная Македония', flag: 'https://flagcdn.com/w320/mk.png' },
+  { name: 'Сейшелы', flag: 'https://flagcdn.com/w320/sc.png' },
+  { name: 'Сенегал', flag: 'https://flagcdn.com/w320/sn.png' },
+  { name: 'Сербия', flag: 'https://flagcdn.com/w320/rs.png' },
+  { name: 'Сингапур', flag: 'https://flagcdn.com/w320/sg.png' },
+  { name: 'Сирия', flag: 'https://flagcdn.com/w320/sy.png' },
+  { name: 'Словакия', flag: 'https://flagcdn.com/w320/sk.png' },
+  { name: 'Словения', flag: 'https://flagcdn.com/w320/si.png' },
+  { name: 'Сомали', flag: 'https://flagcdn.com/w320/so.png' },
+  { name: 'Судан', flag: 'https://flagcdn.com/w320/sd.png' },
+  { name: 'Суринам', flag: 'https://flagcdn.com/w320/sr.png' },
+  { name: 'США', flag: 'https://flagcdn.com/w320/us.png' },
+  { name: 'Сьерра-Леоне', flag: 'https://flagcdn.com/w320/sl.png' },
+  { name: 'Таджикистан', flag: 'https://flagcdn.com/w320/tj.png' },
+  { name: 'Таиланд', flag: 'https://flagcdn.com/w320/th.png' },
+  { name: 'Танзания', flag: 'https://flagcdn.com/w320/tz.png' },
+  { name: 'Того', flag: 'https://flagcdn.com/w320/tg.png' },
+  { name: 'Тонга', flag: 'https://flagcdn.com/w320/to.png' },
+  { name: 'Тринидад и Тобаго', flag: 'https://flagcdn.com/w320/tt.png' },
+  { name: 'Тунис', flag: 'https://flagcdn.com/w320/tn.png' },
+  { name: 'Туркменистан', flag: 'https://flagcdn.com/w320/tm.png' },
+  { name: 'Турция', flag: 'https://flagcdn.com/w320/tr.png' },
+  { name: 'Уганда', flag: 'https://flagcdn.com/w320/ug.png' },
+  { name: 'Узбекистан', flag: 'https://flagcdn.com/w320/uz.png' },
+  { name: 'Украина', flag: 'https://flagcdn.com/w320/ua.png' },
+  { name: 'Уругвай', flag: 'https://flagcdn.com/w320/uy.png' },
+  { name: 'Фиджи', flag: 'https://flagcdn.com/w320/fj.png' },
+  { name: 'Филиппины', flag: 'https://flagcdn.com/w320/ph.png' },
+  { name: 'Финляндия', flag: 'https://flagcdn.com/w320/fi.png' },
+  { name: 'Франция', flag: 'https://flagcdn.com/w320/fr.png' },
+  { name: 'Хорватия', flag: 'https://flagcdn.com/w320/hr.png' },
+  { name: 'Центральноафриканская Республика', flag: 'https://flagcdn.com/w320/cf.png' },
+  { name: 'Чад', flag: 'https://flagcdn.com/w320/td.png' },
+  { name: 'Черногория', flag: 'https://flagcdn.com/w320/me.png' },
+  { name: 'Чехия', flag: 'https://flagcdn.com/w320/cz.png' },
+  { name: 'Чили', flag: 'https://flagcdn.com/w320/cl.png' },
+  { name: 'Швейцария', flag: 'https://flagcdn.com/w320/ch.png' },
+  { name: 'Швеция', flag: 'https://flagcdn.com/w320/se.png' },
+  { name: 'Шри-Ланка', flag: 'https://flagcdn.com/w320/lk.png' },
+  { name: 'Эквадор', flag: 'https://flagcdn.com/w320/ec.png' },
+  { name: 'Эритрея', flag: 'https://flagcdn.com/w320/er.png' },
+  { name: 'Эстония', flag: 'https://flagcdn.com/w320/ee.png' },
+  { name: 'Эфиопия', flag: 'https://flagcdn.com/w320/et.png' },
+  { name: 'Южно-Африканская Республика', flag: 'https://flagcdn.com/w320/za.png' },
+  { name: 'Ямайка', flag: 'https://flagcdn.com/w320/jm.png' },
+  { name: 'Япония', flag: 'https://flagcdn.com/w320/jp.png' }
+];
+    `,
+    7:`шаблоны
+    https://html-templates.info/landing-html-templates/page/5
+    https://colorlib.com/wp/free-responsive-website-templates/
+     
+
+    мой старенький репозиторий для одной кофейни https://github.com/Imadoend/coffee_house
     `,
       8:`СОЗДАЙТЕ index.html (ПРИМЕЧАНИЕ, ПОИСК РАБОТАЕТ ТОЛЬКО ПО ГОРОДАМ И ВОДОЕМАМ)
-      ЗАМЕНИТЕ ! ПЕРЕД script на стрелочка вправо
+      ЗАМЕНИТЕ ! ПЕРЕД script на <
       ВСТАВЬТЕ АПИ КЛЮЧ 97755205-3d62-402d-9df8-c3c60a4181d4 ВМЕСТО ВАШ_КЛЮЧ. НЕ СРАБОТАЕТ, САМИ БЕСПЛАТНО СГЕНЕРЬТЕ ЯНДЕКС АПИ КЛЮЧ, ТИП JavaScript API и HTTP Геокодер
       <!DOCTYPE html>
 <html lang="ru">
@@ -910,6 +1327,85 @@ class User(UserMixin, db.Model):
 </body>
 </html>
     `,
+    13:`В КОНСОЛИ:
+npm init -y
+npm install ws
+npm install -g serve
+
+СОЗДАЙ server.js:
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 8080 }); 
+const clients = new Set();
+
+wss.on('connection', ws => {
+  clients.add(ws); 
+  ws.on('message', data => {
+    const msg = data.toString();
+    clients.forEach(client => {
+      if (client !== ws && client.readyState === 1) client.send(msg);
+    });
+  });
+});
+
+
+
+СОЗДАЙ index.html (ОБЕРНИТЕ {name}: {text} В КАВЫЧКИ ПОД НАКЛОНОМ И ПЕРЕД {name}, И ПЕРЕД {text} ПОСТАВЬТЕ ПО ДОЛЛАРУ:
+ТАКЖЕ ЗАМЕНИТЕ ! ПЕРЕД Script НА <
+<!DOCTYPE html>
+<html>
+<head>
+  <title>чатик</title>
+  <style>
+    #chat { height:300px; overflow:auto; border:1px solid #ccc; padding:10px; }
+    input { margin:5px 0; padding:8px; width:200px; }
+    button { padding:8px 12px; }
+  </style>
+</head>
+<body>
+  <h2>чатик</h2>
+  <div id="chat"></div>
+  <input id="inputName" placeholder="ваш ник">
+  <input id="inputMsg" placeholder="смс">
+  <button onclick="send()">отправить</button>
+
+  !script>
+    const chat = document.getElementById('chat');
+    const inputMsg = document.getElementById('inputMsg');
+    const inputName = document.getElementById('inputName');
+    const socket = new WebSocket('ws://localhost:8080');
+
+    socket.onmessage = (e) => {
+      const msg = document.createElement('div');
+      msg.textContent = e.data;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    };
+
+    function send() {
+      const text = inputMsg.value.trim();
+      const name = inputName.value.trim() || 'Аноним';
+      if (text) {
+        const message = {name}: {text}; 
+        const msg = document.createElement('div');
+        msg.textContent = message;
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight; 
+        socket.send(message);
+        inputMsg.value = '';
+      }
+    } 
+    inputMsg.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') send();
+    });
+  !/script>
+</body>
+</html>
+
+
+В КОНСОЛИ node server.js
+И ЕЩЕ В ОДНОЙ КОНСОЛИ npx serve -s .
+ПЕРЕЙДИТЕ В ПОСЛЕДНЕЙ КОНСОЛИ НА ОТОБРАЖЕННЫЙ Network: адрес
+НЕСКОЛЬКО ВКЛАДОК ОТКРОЙТЕ И ПЕРЕПИСЫВАЙТЕСЬ, РАБОТАЕТ В ОДНОЙ СЕТИ НА ЛЮБОМ УСТРОЙСТВЕ`,
     14:`СОЗДАЙТЕ index.html
     <!DOCTYPE html>
 <html lang="ru">
@@ -1339,6 +1835,60 @@ class ProductAdmin(admin.ModelAdmin):
     В БРАУЗЕРЕ АДМИНКА НА http://127.0.0.1:8000/admin
     Зайти и насоздавать юзеров товаров на всякий хз
     `,
+    19:`В КОНСОЛИ: npx create-react-app ./
+
+    ЗАМЕНИТЕ src/App.js:
+import React, { useState } from 'react';
+
+export default function App() {
+  const [reviews, setReviews] = useState([]);
+  const [text, setText] = useState('');
+  const [name, setName] = useState('');  
+
+  const addReview = () => {
+    if (text.trim()) setReviews([{ id: Date.now(), text, name: name || 'Аноним' }, ...reviews]); // ← встроено в существующую строку
+    setText(''); setName('');
+  };
+
+  return (
+    <div style={{fontFamily: 'Arial', padding: 20, maxWidth: 600, margin: '0 auto'}}>
+      <h1>Отзывы о товаре</h1>
+      <div style={{border: '1px solid #ccc', borderRadius: 8, padding: 15, marginBottom: 20, textAlign: 'center'}}>
+        <h2>Лабуба игрушка</h2>
+        <img src="https://prod-america-res.popmart.com/default/01_k22N5Sn3fe_1200x1200.jpg" 
+             alt="Лабуба" 
+             style={{width: 150, height: 150, objectFit: 'cover', borderRadius: 8}} />
+        <p style={{color: '#555'}}>Милая плюшевая зверюшка с розовыми щёчками. Поднимает настроение и обнимает крепко.</p>
+        <p><strong>Цена: 1290 ₽</strong></p>
+        <p><em>Доступна в розовом и сером цветах</em></p>
+      </div>
+ 
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ваше имя" style={{width:'100%',padding:8,marginBottom:5}}/>
+
+      <textarea value={text} onChange={(e) => setText(e.target.value)} 
+                placeholder="Оставьте ваш отзыв" 
+                style={{width: '100%', height: 80, marginBottom: 10, padding: 10, boxSizing: 'border-box'}} />
+      <button onClick={addReview} 
+              style={{background: '#ff00b3', color: 'white', border: 'none', padding: '10px 15px', borderRadius: 4, cursor: 'pointer'}}>
+        Отправить отзыв
+      </button>
+
+      <div style={{marginTop: 20}}>
+        <h3>Отзывы ({reviews.length}):</h3>
+        {reviews.length === 0 ? <p>Пока нет отзывов.</p> : 
+         reviews.map(r => <p key={r.id} style={{border: '1px solid #eee', padding: 10, borderRadius: 4, backgroundColor: '#f9f9f9'}}>{r.name}: {r.text}</p>)
+        }
+      </div>
+    </div>
+  );
+}
+
+
+
+ЗАПУСТИТЕ npm start
+ПЕРЕЙДИТЕ http://localhost:3000/
+    `,
+
     22:`В КОНСОЛИ: 
     pip install django
 django-admin startproject school .
