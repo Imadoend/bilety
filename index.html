@@ -964,8 +964,7 @@ export default [
     https://html-templates.info/landing-html-templates/page/5
     https://colorlib.com/wp/free-responsive-website-templates/
      
-
-    мой старенький репозиторий для одной кофейни https://github.com/Imadoend/coffee_house
+ 
     `,
       8:`СОЗДАЙТЕ index.html (ПРИМЕЧАНИЕ, ПОИСК РАБОТАЕТ ТОЛЬКО ПО ГОРОДАМ И ВОДОЕМАМ)
       ЗАМЕНИТЕ ! ПЕРЕД script на <
@@ -2175,6 +2174,72 @@ name,age,score
 Кирилл,35,78.5
 
 ЗАПУСТИТЬ node server.js
+`,
+27:`В КОНСОЛИ
+npm init -y
+npm install express nodemailer
+
+СОЗДАЙТЕ app.js:
+const express = require('express');
+const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+
+const app = express();
+app.use(bodyParser.json());
+ 
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
+app.post('/send', (req, res) => {
+  const { to, subject, text } = req.body; 
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: 'твой@gmail.com', pass: 'ПАРОЛЬ' }
+  });
+  transporter.sendMail({
+    from: 'твой@gmail.com',
+    to, subject, text
+  }, () => res.send('OK'));
+});
+app.listen(3000);
+
+
+
+ДАЛЕЕ ПРИДЕТСЯ ВОЙТИ В ГУГЛ АКК
+НА https://myaccount.google.com/ ВКЛАДКА Безопасность ВКЛЮЧИТЕ ДВУХФАКТОРНУЮ АУТЕНТИФИКАЦИЮ
+ДАЛЕЕ https://myaccount.google.com/apppasswords ПОЛУЧИТЕ ПАРОЛЬ ДЛЯ ПРИЛОЖЕНИЯ И ВСТАВЬТЕ ЕГО В КОД app.js ВМЕСТО ПАРОЛЬ
+ДАЛЕЕ ВСТАВЬТЕ СВОЙ GMAIL ВМЕСТО твой@gmail.com В app.js
+
+
+
+СОЗДАЙТЕ test.html (ЗАМЕНИТЕ ! перед script на <):
+<!DOCTYPE html>
+<html>
+<body>
+  <form id=f>
+    <input id=t type=email placeholder=Кому required><br><br>
+    <input id=s placeholder=Тема required><br><br>
+    <textarea id=x placeholder="Текст письма" required></textarea><br><br>
+    <button onclick="send();return false">Отправить</button>
+  </form>
+  !script>
+    function send() {
+      const f = d => document.getElementById(d).value;
+      fetch('http://localhost:3000/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: f('t'), subject: f('s'), text: f('x') })
+      }).then(r => r.text()).then(alert);
+    }
+  !/script>
+</body>
+</html>
+
+ЗАПУСТИТЬ node app.js И ОТКРЫТЬ test.html В БРАУЗЕРЕ
 `,
       29: `инструкция!!!
       Установите php на комп архив
