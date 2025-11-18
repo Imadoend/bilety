@@ -1716,7 +1716,62 @@ if __name__ == '__main__':
 </body>
 </html>
       `,
+      16:`В КОНСОЛИ pip install flask
       
+      app.py:
+      from flask import Flask, render_template, request
+import json
+import os
+
+app = Flask(__name__)
+ 
+FILE = 'places.json'
+
+@app.route('/')
+def index():
+    places = []
+    if os.path.exists(FILE):
+        try:
+            with open(FILE, 'r', encoding='utf-8') as f:
+                places = json.load(f)
+        except:
+            pass
+    return render_template('index.html', places=places)
+
+@app.route('/add_place', methods=['POST'])
+def add_place():
+    print("✅ /add_place вызван")   
+    data = request.get_json()
+    print("📥 Получено:", data)     
+
+    places = []
+    if os.path.exists(FILE):
+        try:
+            with open(FILE, 'r', encoding='utf-8') as f:
+                places = json.load(f)
+        except:
+            pass
+
+    places.append(data)
+
+    with open(FILE, 'w', encoding='utf-8') as f:
+        json.dump(places, f, ensure_ascii=False)
+
+    print("💾 Сохранено")
+    return ''
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+    
+    
+    
+    
+    templates/index.html:
+    https://github.com/Imadoend/index16.html/blob/main/index.html
+
+
+    ЗАПУСТИТЕ py app.py
+    `,
       17:`СОЗДАЙТЕ index.html, замените все ! перед script на <
       И украсьте как нибудь чтобы хз тупо базовый минимум
       <!DOCTYPE html>
@@ -2240,6 +2295,43 @@ app.listen(3000);
 </html>
 
 ЗАПУСТИТЬ node app.js И ОТКРЫТЬ test.html В БРАУЗЕРЕ
+`,
+28:`Устанлвить руби и добавить в path
+
+В КОНСОЛИ 
+npm init -y
+npm install express ejs body-parser
+gem install taskjuggler
+
+ЧТОБЫ ЧЕКНУТЬ ВЕРСИЮ taskjuggler :tj3 --version   
+СОЗДАТЬ app.js:
+https://github.com/Imadoend/app28.js/blob/main/app.js
+
+
+СОЗДАТЬ views/index.ejs
+<h1>Добавить задачу</h1>
+<form method="POST" action="/add">
+  <input name="taskName" placeholder="Имя_задачи" required>
+  <select name="assignee" required>
+    <option value="student">Student</option>
+    <option value="teacher">Teacher</option>
+  </select>
+  <select name="depends">
+    <option value="">Нет зависимости</option>
+    <% t.forEach(t => { %><option><%= t %></option><% }); %>
+  </select>
+  <input name="duration" value="1"> дней
+  <button>Добавить</button>
+</form>
+
+<hr>
+<pre><%= c %></pre>
+<hr>
+<a href="/report"><button>Сгенерировать отчёт</button></a>
+
+
+ЗАПУСТИТЬ node app.js
+
 `,
       29: `инструкция!!!
       Установите php на комп архив
