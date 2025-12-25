@@ -1388,6 +1388,95 @@ export default [
   { name: 'Ямайка', flag: 'https://flagcdn.com/w320/jm.png' },
   { name: 'Япония', flag: 'https://flagcdn.com/w320/jp.png' }
 ];`,
+16:`Windows: Установите XAMPP или OpenServer.
+
+Убедитесь, что:
+MySQL запущен.
+PHP работает (можно проверить командой php -S localhost:8000 позже).
+
+Откройте phpMyAdmin (если используете XAMPP/OpenServer — обычно доступен по http://localhost/phpmyadmin), ИЛИ подключитесь через консоль MySQL.
+Выполните SQL-запрос:
+CREATE DATABASE users_db;
+USE users_db;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE
+);
+
+
+Создайте PHP-файл C:/xampp/htdocs/users_app/index.php:
+<?php
+$pdo = new PDO('mysql:host=localhost;dbname=users_db;charset=utf8', 'root', '');
+
+if ($_POST) {
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    if ($name && $email) {
+        try {
+            $pdo->prepare("INSERT INTO users (name, email) VALUES (?, ?)")->execute([$name, $email]);
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
+        } catch (PDOException $e) {
+            $error = $e->getCode() == 23000 ? "Email уже используется." : "Ошибка.";
+        }
+    } else {
+        $error = "Заполните все поля.";
+    }
+}
+
+$users = $pdo->query("SELECT * FROM users ORDER BY id")->fetchAll();
+?>
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Пользователи</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f4f4f4; }
+        form { margin-bottom: 20px; }
+        input, button { padding: 5px; margin: 5px; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<h2>Добавить пользователя</h2>
+<form method="POST">
+    <input name="name" placeholder="Имя" required>
+    <input name="email" type="email" placeholder="Email" required>
+    <button>Добавить</button>
+</form>
+
+<?php if (!empty($error)) echo "<p class='error'>$error</p>"; ?>
+
+<h2>Список пользователей</h2>
+<?php if ($users): ?>
+    <table>
+        <tr><th>ID</th><th>Имя</th><th>Email</th></tr>
+        <?php foreach ($users as $u): ?>
+            <tr>
+                <td><?= htmlspecialchars($u['id']) ?></td>
+                <td><?= htmlspecialchars($u['name']) ?></td>
+                <td><?= htmlspecialchars($u['email']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+<?php else: ?>
+    <p>Пока нет пользователей.</p>
+<?php endif; ?>
+
+</body>
+</html>
+
+
+ОТКРЫТЬ http://localhost/users_app/
+`,
 17:`В КОНСОЛИ npx create-react-app ./
 
 App.js:
