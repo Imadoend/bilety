@@ -45,51 +45,353 @@
 
   <script>
     const practices = {
-      1:`СОЗДАЙТЕ index.html
-      (ОБЕРНИТЕ <td>{post.id}</td><td>{post.title}</td><td>{post.body}</td> В КАВЫЧКИ ПОД НАКЛОНОМ
-      И ПОСТАВЬТЕ $ ПЕРЕД {post.id},{post.title} И {post.body}
-      ТАКЖЕ ИЗМЕНИТЕ ! НА < ПЕРЕД script)
-      <!DOCTYPE html>
+      1:`django-admin startproject korochki
+      cd korochki
+      python manage.py startapp main
+
+      MODELS.PY:
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    phone = models.CharField(max_length=18)
+    email = models.EmailField(unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username','phone','first_name','last_name']
+
+class Course(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class Application(models.Model):
+    PAYMENT_CHOICES = [
+        ('cash','наличными'),
+        ('transfer','Перевод по номеру телефона')
+    ]
+    STATUS_CHOICES = [
+        ('new','Новая'),
+        ('in_progress','Идет обучение'),
+        ('completed','Обучение завершено')
+    ]
+
+    user = models.ForeignKey(User,on_delete =models.CASCADE)
+    course = models.ForeignKey(Course,on_delete =models.CASCADE)
+    start_date = models.DateField()
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES,default = 'new')
+    feedback = models.TextField(blank = True,null = True)
+    def __str__(self):
+        return f"{self.user.email} - {self.course.name}"
+
+
+
+    (main) URLS.PY:
+    # main/urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('register/', views.register, name='register'),
+    path('login/', views.user_login, name='login'),
+    path('logout/', views.user_logout, name='logout'),
+    path('apply/', views.apply, name='apply'),
+    path('my_applications/', views.my_applications, name='my_applications'),
+]
+
+
+URLS.PY:
+from django.contrib import admin
+from django.urls import path,include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('',include('main.urls')),
+]
+
+
+      settings.py:
+      AUTH_USER_MODEL = 'main.User'
+
+
+
+      VIEWS:
+      # main/views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Course, Application
+from datetime import datetime
+import re
+
+
+def index(request):
+    return redirect('login')
+
+def register(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        first_name = request.POST['first_name']
+        last_name = request.POST['last_name']
+        phone = request.POST['phone']
+        email = request.POST['email']
+
+        if len(username) < 6 or not username.replace('_', '').replace('.', '').isalnum():
+            messages.error(request, "Логин должен быть не короче 6 символов и содержать только латиницу и цифры")
+            return render(request, 'register.html')
+        if len(password) < 8:
+            messages.error(request, "Пароль должен быть не короче 8 символов")
+            return render(request, 'register.html')
+        if not all(c.isalpha() or c.isspace() for c in (first_name + last_name)):
+            messages.error(request, "ФИО должно содержать только кириллицу и пробелы")
+            return render(request, 'register.html') 
+        if not re.fullmatch(r'8\(\d{3}\)\d{3}-\d{2}-\d{2}', phone):
+            messages.error(request, "Неверный формат телефона. Используйте: 8(XXX)XXX-XX-XX")
+            return render(request, 'register.html')
+
+        from .models import User
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Пользователь с таким email уже существует")
+            return render(request, 'register.html')
+
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            email=email
+        )
+        user.save()
+        login(request, user)
+        return redirect('apply')
+    return render(request, 'register.html')
+
+def user_login(request):
+    if request.method == 'POST':
+        email = request.POST['email']
+        password = request.POST['password']
+        from .models import User
+        try:
+            username = User.objects.get(email=email).username
+        except User.DoesNotExist:
+            messages.error(request, "Неверный email или пароль")
+            return render(request, 'login.html')
+        user = authenticate(request, username=username, password=password)
+        if user:
+            login(request, user)
+            return redirect('apply')
+        else:
+            messages.error(request, "Неверный email или пароль")
+    return render(request, 'login.html')
+
+def user_logout(request):
+    logout(request)
+    return redirect('login')
+
+@login_required
+def apply(request):
+    courses = Course.objects.all()
+    if request.method == 'POST':
+        course_id = request.POST['course']
+        start_date = request.POST['start_date']
+        payment = request.POST['payment']
+        course = Course.objects.get(id=course_id)
+        Application.objects.create(
+            user=request.user,
+            course=course,
+            start_date=start_date,
+            payment_method=payment
+        )
+        return redirect('my_applications')
+    return render(request, 'apply.html', {'courses': courses})
+
+@login_required
+def my_applications(request):
+    apps = Application.objects.filter(user=request.user)
+    return render(request, 'my_applications.html', {'applications': apps})
+
+
+
+
+
+  apply.html:
+  <!-- main/templates/apply.html -->
+{% extends 'base.html' %}
+{% block content %}
+<h2>Подать заявку</h2>
+<form method="post">
+    {% csrf_token %}
+    <div>
+        <label>Курс:</label>
+        <select name="course" required>
+            {% for c in courses %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div><input type="date" name="start_date" required></div>
+    <div>
+        <label>Оплата:</label>
+        <label><input type="radio" name="payment" value="cash" required> Наличными</label>
+        <label><input type="radio" name="payment" value="transfer"> Перевод</label>
+    </div>
+    <button type="submit">Отправить</button>
+</form>
+<a href="{% url 'my_applications' %}">Мои заявки</a>
+{% endblock %}
+
+
+
+base.html:
+<!-- main/templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Посты</title>
+    <meta charset="UTF-8">
+    <title>Корочки.есть</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; padding: 10px; margin: 0; background: #f9f9f9; }
+        .container { max-width: 400px; margin: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .error { color: red; font-size: 0.9em; }
+        form div { margin: 12px 0; }
+        input, select, button { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #4CAF50; color: white; cursor: pointer; }
+        button:hover { opacity: 0.9; }
+
+        /* Слайдер */
+        .slider { position: relative; max-width: 390px; height: 200px; margin: 20px auto; overflow: hidden; border-radius: 8px; }
+        .slides { display: flex; width: 400%; height: 100%; transition: transform 0.5s ease-in-out; }
+        .slide { width: 25%; height: 100%; }
+        .slide img { width: 100%; height: 100%; object-fit: cover; }
+        .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.7); border: none; font-size: 18px; padding: 10px; cursor: pointer; }
+        .prev { left: 10px; }
+        .next { right: 10px; }
+    </style>
 </head>
 <body>
-  <h1>Первые 10 постов</h1>
-  <div id="status">Загрузка...</div>
-  <table id="table" style="display:none; border-collapse: collapse; width: 100%;">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Заголовок</th>
-        <th>Текст</th>
-      </tr>
-    </thead>
-    <tbody id="body"></tbody>
-  </table>
+    <div class="container">
+        {% if user.is_authenticated %}
+            <p>Привет, {{ user.first_name }}! <a href="{% url 'logout' %}">Выйти</a></p>
+        {% endif %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="error">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% block slider %}{% endblock %}
+        {% block content %}{% endblock %}
+    </div>
 
-  !script>
-    fetch('https://jsonplaceholder.typicode.com/posts?_limit=10')
-      .then(res => res.json())
-      .then(posts => {
-        const body = document.getElementById('body');
-        posts.forEach(post => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = <td>{post.id}</td><td>{post.title}</td><td>{post.body}</td>;
-          body.appendChild(tr);
-        });
-        document.getElementById('status').style.display = 'none';
-        document.getElementById('table').style.display = 'table';
-      })
-      .catch(() => {
-        document.getElementById('status').textContent = 'Ошибка загрузки';
-      });
-  !/script>
+    {% block extra_js %}
+    {% endblock %}
 </body>
 </html>
 
 
+login.html:
+<!-- main/templates/login.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block slider %}
+<div class="slider">
+    <div class="slides" id="slides">
+        <div class="slide"><img src="{% static 'main/images/slide1.jpg' %}" alt="1"></div>
+        <div class="slide"><img src="{% static 'main/images/slide2.jpg' %}" alt="2"></div>
+        <div class="slide"><img src="{% static 'main/images/slide3.jpg' %}" alt="3"></div>
+        <div class="slide"><img src="{% static 'main/images/slide4.jpg' %}" alt="4"></div>
+    </div>
+    <button class="slider-btn prev" onclick="moveSlide(-1)">❮</button>
+    <button class="slider-btn next" onclick="moveSlide(1)">❯</button>
+</div>
+{% endblock %}
+
+{% block content %}
+<h2>Авторизация</h2>
+<form method="post">
+    {% csrf_token %}
+    <div><input type="email" name="email" placeholder="Email" required></div>
+    <div><input type="password" name="password" placeholder="Пароль" required></div>
+    <button type="submit">Войти</button>
+</form>
+<p><a href="{% url 'register' %}">Еще не зарегистрированы? Регистрация</a></p>
+{% endblock %}
+
+{% block extra_js %}
+!script>
+    let current = 0;
+    const slides = document.getElementById('slides');
+    const total = 4;
+
+    function showSlide(n) {
+        current = (n + total) % total;
+        slides.style.transform = translateX(-{current * 25}%); //ТУТ ОБЕРНУТЬ В КАВЫЧКИ ПОД НАКЛОНОМ И ДОЛЛАР ПЕРЕД {current * 25}
+    }
+
+    function moveSlide(dir) {
+        showSlide(current + dir);
+        clearInterval(auto);
+        auto = setInterval(() => showSlide(current + 1), 3000);
+    }
+
+    let auto = setInterval(() => showSlide(current + 1), 3000);
+!/script>
+{% endblock %}
+
+
+my_applications.html:
+<!-- main/templates/my_applications.html -->
+{% extends 'base.html' %}
+{% block content %}
+<h2>Мои заявки</h2>
+<ul>
+{% for app in applications %}
+    <li>
+        Курс: {{ app.course.name }}<br>
+        Дата: {{ app.start_date }}<br>
+        Оплата: {{ app.get_payment_method_display }}<br>
+        Статус: {{ app.get_status_display }}
+        {% if app.status == 'completed' %}
+            <br>
+            {% if app.feedback %}
+                Отзыв: {{ app.feedback }}
+            {% else %} 
+            {% endif %}
+        {% endif %}
+    </li>
+{% empty %}
+    <p>Заявок нет.</p>
+{% endfor %}
+</ul>
+<a href="{% url 'apply' %}">Подать новую заявку</a>
+{% endblock %}
+
+
+
+register.html:
+<!-- main/templates/register.html -->
+{% extends 'base.html' %}
+{% block content %}
+<h2>Регистрация</h2>
+<form method="post">
+    {% csrf_token %}
+    <div><input name="first_name" placeholder="Имя" required></div>
+    <div><input name="last_name" placeholder="Фамилия" required></div>
+    <div><input name="username" placeholder="Логин (латиница/цифры, ≥6)" required></div>
+    <div><input type="password" name="password" placeholder="Пароль (≥8)" required></div>
+    <div><input name="phone" placeholder="Телефон: 8(XXX)XXX-XX-XX" required></div>
+    <div><input type="email" name="email" placeholder="Email" required></div>
+    <button type="submit">Создать пользователя</button>
+</form>
+<p><a href="{% url 'login' %}">Уже зарегистрированы? Войти</a></p>
+{% endblock %}
 `,
 2:`ИСПОЛЬЗУЕМ ХУК UseState
 
